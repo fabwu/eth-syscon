@@ -1,0 +1,3 @@
+Compiler.Compile -p=ARM RPI.MinimalLED.Mod ~
+Linker.Link -p=RPI MinimalLED ~
+FoxARMInstructionSet.Disassemble kernel.img ~

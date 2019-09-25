@@ -10,7 +10,7 @@ PROCEDURE {PLAIN} Code;
 CODE
 	ldr r0, [someNumber]
 	mov r1, #0x30
-	str r0, [someNumber]
+	str r1, [r0,#0]
 	end: 
 	b end
 	someNumber: d32 0x0000000

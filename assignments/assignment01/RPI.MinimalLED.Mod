@@ -8,12 +8,24 @@ IMPORT SYSTEM;
 (* PLAIN: Procedure without procedure activation frame *)
 PROCEDURE {PLAIN} Code;
 CODE
-	ldr r0, [someNumber]
-	mov r1, #0x30
+	(* Load address for function selection into r0 *)
+	ldr r0, [FSEL21]
+	(* Load constant 8 to r1 *)
+	mov r1, #0x8
+	(* Save 8 to function selection to set bit 3 to 1 *)
+	str r1, [r0,#0]
+
+	(* Load again the address of the output *)
+	ldr r0, [GPSET0]
+	(* Load number to set bit 21 *)
+	mov r1, #0x200000
+	(* Save the number *)
 	str r1, [r0,#0]
 	end: 
 	b end
-	someNumber: d32 0x0000000
+	(* FSEL21 Bit 5-3 001 *)
+	FSEL21: d32 0x3F200008
+	GPSET0: d32 0x3F20001C
 END Code;
 
 END MinimalLED.

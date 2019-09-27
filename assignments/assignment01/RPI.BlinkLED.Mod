@@ -22,6 +22,8 @@ VAR
 	(* the stack pointer has to be set up before any procedure call happens *)
 	PROCEDURE {OPENING} Entry;
 	CODE
+		(* Set stack pointer just before kernel.img *)
+		MOV SP, #0x8000;
 	END Entry;
 
 	PROCEDURE {CLOSING} Exit;
@@ -40,10 +42,19 @@ VAR
 		but it does not work. Change this and implement blinking afterwards.
 	*)
 	PROCEDURE Blink;
-	VAR wait: INTEGER; 
+	VAR wait: INTEGER;
 	BEGIN
-		gpio.GPFSEL[2] := {3};
-		gpio.GPFSET[0] := {21};
+		gpio.GPFSEL[1] := {18};
+		gpio.GPFSEL[2] := {0,3};
+
+		wait := 200000;
+
+		WHILE TRUE DO
+			gpio.GPFSET[0] := {16,20,21};
+			Wait(wait);
+			gpio.GPFCLR[0] := {16,20,21};
+			Wait(wait);
+		END;
 		LOOP END;
 	END Blink;
 

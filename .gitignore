@@ -1,8 +1,12 @@
 *.img
 <<<<<<< HEAD
+<<<<<<< HEAD
 *.log
 *.arm
 *.Sym
+=======
+*.log
+>>>>>>> Add blibki led
 =======
 *.log
 >>>>>>> Add blibki led

@@ -1,0 +1,69 @@
+MODULE Modules;
+	IMPORT SYSTEM, Kernel, Platform, OFS, Strings, Tools, Heaps, Log;
+CONST 
+	OK* = 0; 
+	NOTFOUND* = 1; 
+	NOTARM* = 2; 
+	WRONGKEY* = 3; 
+	NOMEMORY* = 4; 
+TYPE 
+	Name = ARRAY 32 OF CHAR; 
+
+	Command* = POINTER TO CommandDesc; 
+
+	CommandDesc = RECORD 
+		next*: Command; 
+		offset: SIZE; 
+		name*: Name; 
+	END; 
+
+	EntryTable = POINTER TO EntryTableDesc; 
+
+	EntryTableDesc = RECORD 
+		entry: ARRAY 256 OF SIZE; 
+	END; 
+
+	Module* = POINTER TO ModuleDesc; 
+
+	ModuleDesc = RECORD 
+		next*: Module; 
+		key-: SIZE; 
+		dbase, pbase*: ADDRESS; 
+		size*, refcnt*: SIZE; 
+		command*: Command; 
+		entrytable: EntryTable; 
+		name*: Name; 
+	END; 
+
+	DynamicModule* = POINTER TO DynamicModuleDesc; 
+
+	DynamicModuleDesc = RECORD (ModuleDesc)
+		loaded*: LoadedModule; 
+	END; 
+
+	LoadedModule* = POINTER TO LoadedModuleDesc; 
+
+	LoadedModuleDesc = RECORD 
+		next*: LoadedModule; 
+		module*: Module; 
+	END; 
+VAR 
+	root*: Module; 
+	res: SIZE; 
+	errstring*: ARRAY 32 OF CHAR; 
+
+	PROCEDURE ^ GetRes*(VAR err: ARRAY OF CHAR): SIZE; 
+	PROCEDURE ^ JoinExtension(CONST name, extension: ARRAY OF CHAR; VAR fullname: ARRAY OF CHAR); 
+	PROCEDURE ^ MakeName(CONST name: ARRAY OF CHAR; VAR fullname: ARRAY OF CHAR); 
+	PROCEDURE ^ ReadString(VAR r: OFS.Rider; VAR string: ARRAY OF CHAR); 
+	PROCEDURE ^ Fixup(pbase, fixloc, offset, base: SIZE; CONST entry: ARRAY OF SIZE); 
+	PROCEDURE ^ FixSelf(pbase, fixloc, base: SIZE); 
+	PROCEDURE ^ FindModule*(CONST name: ARRAY OF CHAR; VAR m: Module); 
+	PROCEDURE ^ Call(m: Module; entry: SIZE); 
+	PROCEDURE ^ CallP*(m: Module; CONST pname: ARRAY OF CHAR): BOOLEAN; 
+	PROCEDURE ^ PrintModuleInfo*(m: Module); 
+	PROCEDURE ^ RemoveMod(mod: Module); 
+	PROCEDURE ^ ThisMod*(CONST modname: ARRAY OF CHAR; VAR mod: Module); 
+	PROCEDURE ^ Unload*(CONST name: ARRAY OF CHAR); 
+BEGIN
+END Modules.

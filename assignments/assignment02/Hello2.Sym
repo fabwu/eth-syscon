@@ -1,0 +1,8 @@
+MODULE Hello2;
+	IMPORT Out, Hello;
+CONST 
+
+	PROCEDURE ^ World*; 
+	PROCEDURE ^ World2*; 
+BEGIN
+END Hello2.

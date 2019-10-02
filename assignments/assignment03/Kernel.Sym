@@ -1,0 +1,75 @@
+MODULE Kernel;
+	IMPORT SYSTEM, Platform, UartMin;
+CONST 
+	kVersion* = \"B007"\; 
+	Section = 2; 
+	Domain0 = 0; 
+	FullAccess = 3072; 
+	NormalWriteBackAllocate = 4108; 
+	StronglyOrdered = 0; 
+	Shareable = 65536; 
+	NormalMemory = ((((Section + Domain0) + FullAccess) + NormalWriteBackAllocate) + Shareable); 
+	StronglyOrderedMemory = (((Section + Domain0) + FullAccess) + StronglyOrdered); 
+	MB = (1024 * 1024); 
+	Timer = Platform.STC1; 
+	TimerNr = 1; 
+TYPE 
+	ExceptionHandler* = PROCEDURE {INTERRUPT}; 
+
+	Handler* = PROCEDURE ; 
+
+	TimerHandler* = PROCEDURE ; 
+
+	TrapHandler* = PROCEDURE (type, adr, fp: ADDRESS; VAR resFP: ADDRESS); 
+
+	UDFHandler* = PROCEDURE (adr: ADDRESS); 
+VAR 
+	nextTimerInterrupt: SIZE; 
+	irqHandlers: ARRAY Platform.MaxNumIrq OF Handler; 
+	timer: SIZE; 
+	timerHandler: TimerHandler; 
+	trapHandler: TrapHandler; 
+	udfHandler: UDFHandler; 
+	lnk: PROCEDURE ; 
+	globalLR: ADDRESS; 
+	stack_bottom: ADDRESS; 
+	heap_top: ADDRESS; 
+
+	PROCEDURE ^ Move*(src, dst: ADDRESS; len: SIZE); 
+	PROCEDURE ^ CleanCache*; 
+	PROCEDURE ^ EnableIRQs*; 
+	PROCEDURE ^ DisableIRQs*; 
+	PROCEDURE ^ OSTimer*; 
+	PROCEDURE ^ InstallIrqHandler*(num: SIZE; handler: Handler); 
+	PROCEDURE ^ RemoveIrqHandler*(num: SIZE); 
+	PROCEDURE ^ EnableIRQ*(num: SIZE; enable: BOOLEAN); 
+	PROCEDURE ^ RegisterTimerHandler*(newHandler: TimerHandler); 
+	PROCEDURE ^ RegisterTrapHandler*(newHandler: TrapHandler); 
+	PROCEDURE ^ Timer0IrqHandler; 
+	PROCEDURE ^ CallIrq(num: SIZE); 
+	PROCEDURE ^ IRQTrap; 
+	PROCEDURE ^ SWITrap; 
+	PROCEDURE ^ UDF; 
+	PROCEDURE ^ PrefetchAbort; 
+	PROCEDURE ^ MapMemoryPage(logicalAdr, physAdr: ADDRESS); 
+	PROCEDURE ^ DataAbortAdr(): ADDRESS; 
+	PROCEDURE ^ DataAbort; 
+	PROCEDURE ^ ResetWatchdog*; 
+	PROCEDURE ^ EnableWatchdog*; 
+	PROCEDURE ^ StopWatchdog*; 
+	PROCEDURE ^ StartWatchdog*(time: SIZE); 
+	PROCEDURE ^ WatchdogTimeLeft*(): SIZE; 
+	PROCEDURE ^ GetOSTimer*(): UNSIGNED32; 
+	PROCEDURE ^ MicroWait*(uSec: INTEGER); 
+	PROCEDURE ^ MilliWait*(mSec: INTEGER); 
+	PROCEDURE ^ GetTime*(): INTEGER; 
+	PROCEDURE ^ GetCurrentDateTime*(VAR time, date: SIZE); 
+	PROCEDURE ^ GetCurrentTime*(VAR time: SIZE); 
+	PROCEDURE ^ InstallHandler*(proc: ExceptionHandler; vector: ADDRESS); 
+	PROCEDURE ^ InitHandlers; 
+	PROCEDURE ^ InitMMU; 
+	PROCEDURE ^ Init; 
+	PROCEDURE ^ SetupInterruptVectors; 
+	PROCEDURE ^ Reset*; 
+BEGIN
+END Kernel.

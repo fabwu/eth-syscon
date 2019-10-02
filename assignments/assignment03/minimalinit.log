@@ -1,0 +1,4 @@
+MinimalInit:processing
+000008000H: code MinimalInit.Entry to 000008033H
+code displacement 000008000H
+minimalinit.img:written 416 bits (= 52 units).

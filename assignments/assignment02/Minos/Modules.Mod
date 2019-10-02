@@ -242,8 +242,19 @@ BEGIN
 	END;
 END Unload;
 
+PROCEDURE PatchModuleTypes;
+VAR m: Module;
+BEGIN
+	m := root;
+	WHILE (m # NIL) DO
+		SYSTEM.PUT(ADDRESS(m)-4, SYSTEM.TYPECODE(ModuleDesc));
+		m := m.next;
+	END; 	
+END PatchModuleTypes;
+
 
 BEGIN
 	SYSTEM.GET (Platform.ModRoot, root);
+	PatchModuleTypes();
 	
 END Modules.

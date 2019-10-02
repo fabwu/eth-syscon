@@ -42,8 +42,15 @@ TYPE Name = ARRAY 32 OF CHAR;
 	DynamicModule* = POINTER TO DynamicModuleDesc;
 	DynamicModuleDesc = RECORD(ModuleDesc)
 		(*!STUDENT fill in fields here *)
+		loaded*: LoadedModule;
 	END;
 	
+	LoadedModule* = POINTER TO LoadedModuleDesc;
+	LoadedModuleDesc = RECORD
+		next*: LoadedModule;
+		module*: Module;
+	END;
+
 VAR root*: Module;
 	res: SIZE; errstring*: ARRAY 32 OF CHAR;
 
@@ -153,6 +160,8 @@ VAR imp: Module; cmd: Command;
 	key, offset, datasize: SIZE;
 	fixroot: ARRAY 32 OF SIZE;
 	import: ARRAY 32 OF Module;
+	dynMod: DynamicModule;
+	loadMod: LoadedModule;
 BEGIN 
 	mod := root; res := OK;
 	WHILE (mod # NIL) & (mod.name # modname) DO mod := mod.next; END;
@@ -164,7 +173,14 @@ BEGIN
 			mod:=NIL; res := NOTFOUND; Strings.Copy (name, errstring);
 		ELSE
 			OFS.Set(r, f, 0);
-			NEW(mod); mod.next := root; mod.refcnt := 0; root := mod;
+
+			NEW(dynMod);
+			dynMod.loaded := NIL;
+			mod := dynMod;
+
+			(*NEW(mod);*)
+			
+			mod.next := root; mod.refcnt := 0; root := mod;
 			ReadString (r, mod.name);
 			OFS.ReadInt (r, mod.key);
 			OFS.ReadInt (r, fixself);
@@ -174,6 +190,12 @@ BEGIN
 				ThisMod (name, imp);
 				IF imp # NIL THEN
 					IF key = imp.key THEN
+						NEW(loadMod);
+						loadMod.module := imp;
+
+						loadMod.next := dynMod.loaded;
+						dynMod.loaded := loadMod;
+
 						import[i] := imp; INC (imp.refcnt); fixroot[i] := fix; INC(i)
 					ELSE 
 						res := WRONGKEY; Strings.Copy (name, errstring); (* RemoveMod(mod); *) mod := NIL;
@@ -224,6 +246,7 @@ PROCEDURE Unload*(CONST name: ARRAY OF CHAR );
 VAR
 	m: Module;
 	i: SIZE;
+	n: LoadedModule;
 BEGIN
 	(* find the module by name *)
 	m := root;
@@ -234,8 +257,21 @@ BEGIN
 
 		(*! STUDENT FILL IN CODE HERE *)
 		(* can we unload it ? *)
-		(* If yes, unload, remove from module list  *)
-		(* hint: do not forget the reference counts *)
+		IF m.refcnt = 0 THEN
+			(* If yes, unload, remove from module list  *)
+			WITH m: DynamicModule DO
+				n := m.loaded;
+				(* hint: do not forget the reference counts *)
+				WHILE n # NIL DO
+					n.module.refcnt := n.module.refcnt - 1;
+					n := n.next;
+				END;
+			ELSE  
+			END;
+			RemoveMod(m);
+		ELSE
+			Log.S("module "); Log.S(name); Log.SL(" refcnt not zero");
+		END;
 
 	ELSE
 		Log.S("module "); Log.S(name); Log.SL(" not found");

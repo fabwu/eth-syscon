@@ -1,0 +1,100 @@
+MODULE Minos;
+	IMPORT SYSTEM, Kernel, Device, Modules, Log, OFS, Strings, Platform, Tools, UartMin, Heaps;
+CONST 
+	MD* = 10X; 
+	CP* = 11X; 
+	MS* = 23X; 
+	Nil = 0X; 
+	BOol = 1X; 
+	CHar = 2X; 
+	INt = 3X; 
+	REal = 4X; 
+	PTr = 6X; 
+	End = 0FFX; 
+	VAr = 1X; 
+	PAr = 2X; 
+	REg = 8X; 
+	REgparX = 9X; 
+	PRoc = 10X; 
+	SFtag = 0F5X; 
+	Undef = 0; 
+	Bool = 1; 
+	Char = 2; 
+	Int = 3; 
+	Real = 4; 
+	Pointer = 5; 
+	Rider = 6; 
+	NilTyp = 7; 
+	NoTyp = 8; 
+	Proc = 10; 
+	String = 11; 
+	Array = 12; 
+	Record = 13; 
+	ImpTyp = 14; 
+	OArray = 15; 
+	Var = 1; 
+	Par = 2; 
+	ParamLength = 32; 
+TYPE 
+	Task* = POINTER TO TaskDesc; 
+
+	PeriodicTask* = POINTER TO PeriodicTaskDesc; 
+
+	TaskCode = PROCEDURE (me: Task); 
+
+	TaskDesc* = RECORD 
+		proc: TaskCode; 
+		name: ARRAY 32 OF CHAR; 
+		next: Task; 
+		maxTime, meanTime, totalTime: SIZE; 
+	END; 
+
+	PeriodicTaskDesc* = RECORD (TaskDesc)
+		priority: SIZE; 
+		interval: SIZE; 
+	END; 
+VAR 
+	backgroundTasks: Task; 
+	periodicTasks: PeriodicTask; 
+	msg: ARRAY 5 OF ARRAY 32 OF CHAR; 
+	mname, pname, param: ARRAY ParamLength OF CHAR; 
+	abortModeFP, supervisorModeFP: SIZE; 
+	dev: Device.Device; 
+
+	PROCEDURE ^ Scheduler; 
+	PROCEDURE ^ NullScheduler; 
+	PROCEDURE ^ Time*(): SIZE; 
+	PROCEDURE ^ InstallTask*(t: Task; proc: TaskCode; CONST name: ARRAY OF CHAR); 
+	PROCEDURE ^ RemoveTask*(t: Task); 
+	PROCEDURE ^ InstallPeriodicTask*(s: PeriodicTask; proc: TaskCode; CONST name: ARRAY OF CHAR; interval: SIZE; priority: SIZE); 
+	PROCEDURE ^ RemovePeriodicTask*(s: PeriodicTask); 
+	PROCEDURE ^ StartSync*; 
+	PROCEDURE ^ StopSync*; 
+	PROCEDURE ^ ExecuteBGTasks; 
+	PROCEDURE ^ GetParam*(VAR s: ARRAY OF CHAR); 
+	PROCEDURE ^ Call*(CONST modname, pname: ARRAY OF CHAR): BOOLEAN; 
+	PROCEDURE ^ HostCommand(task: Task); 
+	PROCEDURE ^ ReadString*(VAR R: OFS.Rider; VAR x: ARRAY OF CHAR); 
+	PROCEDURE ^ ShowPostDebug(m: Modules.Module; fp, reladr: SIZE); 
+	PROCEDURE ^ DumpRegs(fp, pc: SIZE); 
+	PROCEDURE ^ TrapHandler(type, adr, fp: ADDRESS; VAR resFP: ADDRESS); 
+	PROCEDURE ^ SearchModule(pc: SIZE; VAR m: Modules.Module); 
+	PROCEDURE ^ Debug; 
+	PROCEDURE ^ ShowStatus*; 
+	PROCEDURE ^ DumpModule*; 
+	PROCEDURE ^ ShowModules*; 
+	PROCEDURE ^ ShowCommands*; 
+	PROCEDURE ^ ShowTasks*; 
+	PROCEDURE ^ ShowMemory*; 
+	PROCEDURE ^ ShowDir(CONST name: ARRAY OF CHAR; time, date, size: SIZE; VAR flags: SET); 
+	PROCEDURE ^ Directory*; 
+	PROCEDURE ^ RemoteRead*; 
+	PROCEDURE ^ RemoteWrite*; 
+	PROCEDURE ^ Delete*; 
+	PROCEDURE ^ RESET*; 
+	PROCEDURE ^ Unload*; 
+	PROCEDURE ^ FinishStartUp*; 
+	PROCEDURE ^ InitMsg; 
+	PROCEDURE ^ Init; 
+BEGIN
+END Minos.

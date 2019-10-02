@@ -1,0 +1,47 @@
+MODULE SerialLog;
+	IMPORT Device, Uart, Log, Platform, UartMin;
+CONST 
+	Base = 1297848440; 
+	LOG* = (Base + 32); 
+	FR* = (Base + 33); 
+	MS* = (Base + 35); 
+	FD* = (Base + 36); 
+	FS* = (Base + 37); 
+	BEEP* = (Base + 38); 
+	CMD* = (Base + 39); 
+	LN* = 21X; 
+	STR* = 22X; 
+	CH* = 23X; 
+	INT* = 24X; 
+	HEX* = 25X; 
+	FLOAT* = 26X; 
+	SETS* = 27X; 
+	TIME* = 28X; 
+	CLEAR* = 29X; 
+	BUF* = 30X; 
+VAR 
+	blocking: BOOLEAN; 
+	dev: Device.Device; 
+
+	PROCEDURE ^ Cmd(type: CHAR); 
+	PROCEDURE ^ Await(numberOfCharacters: SIZE): BOOLEAN; 
+	PROCEDURE ^ Ch(ch: CHAR); 
+	PROCEDURE ^ Hex(i: SIZE); 
+	PROCEDURE ^ Str(CONST str: ARRAY OF CHAR); 
+	PROCEDURE ^ Int(i: SIZE); 
+	PROCEDURE ^ Real(a: FLOAT32); 
+	PROCEDURE ^ Set(a: SET); 
+	PROCEDURE ^ Bool(b: BOOLEAN); 
+	PROCEDURE ^ Ln; 
+	PROCEDURE ^ Beep(freq, duration: SIZE); 
+	PROCEDURE ^ Clear; 
+	PROCEDURE ^ SetBlocking*(block: BOOLEAN); 
+	PROCEDURE ^ Flush; 
+	PROCEDURE ^ BlockingModeOn*; 
+	PROCEDURE ^ BlockingModeOff*; 
+	PROCEDURE ^ Buffer(CONST buf: ARRAY OF CHAR; offset, len: SIZE); 
+	PROCEDURE ^ Disable*; 
+	PROCEDURE ^ Trap(enable: BOOLEAN); 
+	PROCEDURE ^ Install*; 
+BEGIN
+END SerialLog.

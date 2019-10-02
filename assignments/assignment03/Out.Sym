@@ -1,0 +1,14 @@
+MODULE Out;
+	IMPORT Log;
+
+	PROCEDURE ^ String*(CONST s: ARRAY OF CHAR); 
+	PROCEDURE ^ Char*(c: CHAR); 
+	PROCEDURE ^ Ln*; 
+	PROCEDURE ^ Set*(s: SET); 
+	PROCEDURE ^ Int*(i: SIZE); 
+	PROCEDURE ^ Hex*(i: SIZE); 
+	PROCEDURE ^ Address*(a: ADDRESS); 
+	PROCEDURE ^ Float*(x: FLOAT32); 
+	PROCEDURE ^ Update*; 
+BEGIN
+END Out.

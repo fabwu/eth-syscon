@@ -1,0 +1,45 @@
+MODULE UartMin;
+	IMPORT SYSTEM, Platform;
+CONST 
+	PNONE* = 0; 
+	PODD* = 8; 
+	PEVEN* = 24; 
+	PFORCE1* = 40; 
+	PFORCE0* = 56; 
+	CommandBase = 1297848440; 
+	LOG* = (CommandBase + 32); 
+	LN* = 21X; 
+	STR* = 22X; 
+	CH* = 23X; 
+	INT* = 24X; 
+	HEX* = 25X; 
+	FLOAT* = 26X; 
+	SETS* = 27X; 
+	TIME* = 28X; 
+	CLEAR* = 29X; 
+	BUF* = 30X; 
+TYPE 
+	FlushProc = PROCEDURE ; 
+VAR 
+	minosHostMode: BOOLEAN; 
+	flush: FlushProc; 
+
+	PROCEDURE ^ RegisterFlushProcedure*(f: FlushProc); 
+	PROCEDURE ^ WriteChar-(character: CHAR); 
+	PROCEDURE ^ ReadChar-(VAR character: CHAR): BOOLEAN; 
+	PROCEDURE ^ Flush-; 
+	PROCEDURE ^ WriteInt(i: INTEGER); 
+	PROCEDURE ^ Cmd(cmd: CHAR); 
+	PROCEDURE ^ OpenComPort*(baudrate, parity, databits: INTEGER; flowControl: BOOLEAN); 
+	PROCEDURE ^ Init*; 
+	PROCEDURE ^ Ln*; 
+	PROCEDURE ^ Ch*(c: CHAR); 
+	PROCEDURE ^ Str*(CONST text: ARRAY OF CHAR); 
+	PROCEDURE ^ StrLn*(CONST text: ARRAY OF CHAR); 
+	PROCEDURE ^ Hex*(val: INTEGER); 
+	PROCEDURE ^ Bool*(bol: BOOLEAN); 
+	PROCEDURE ^ Mem*(adr: ADDRESS; size: SIZE); 
+	PROCEDURE ^ Set*(val: SET); 
+	PROCEDURE ^ MinosHostMode*(minosMode: BOOLEAN); 
+BEGIN
+END UartMin.

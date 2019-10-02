@@ -1,0 +1,21 @@
+MODULE OFSRamVolumes;
+	IMPORT SYSTEM, OFS, Platform, Strings, Log;
+CONST 
+TYPE 
+	Volume* = POINTER TO RAMVolumeDesc; 
+
+	RAMVolumeDesc = RECORD (OFS.VolumeDesc)
+		baseAdr: SIZE; 
+	END; 
+VAR 
+	count: SIZE; 
+
+	PROCEDURE ^ CopyBlock(src, dst, len: ADDRESS); 
+	PROCEDURE ^ ClearMem(adr, len: SIZE); 
+	PROCEDURE ^ GetBlock*(volume: OFS.Volume; adr: SIZE; VAR blk: ARRAY OF SYSTEM.BYTE; ofs: SIZE; VAR res: INTEGER); 
+	PROCEDURE ^ PutBlock*(volume: OFS.Volume; adr: SIZE; VAR blk: ARRAY OF SYSTEM.BYTE; ofs: SIZE; VAR res: INTEGER); 
+	PROCEDURE ^ Finalize*(vol: OFS.Volume); 
+	PROCEDURE ^ New*(adr, size, blocksize: SIZE; init: BOOLEAN; VAR vol: Volume); 
+	PROCEDURE ^ MountRamDisk; 
+BEGIN
+END OFSRamVolumes.

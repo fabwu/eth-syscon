@@ -1,0 +1,5 @@
+MODULE MinimalInit;
+	IMPORT SYSTEM;
+
+	PROCEDURE ^ Entry; 
+END MinimalInit.

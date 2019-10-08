@@ -1,0 +1,7 @@
+Compiler.Compile -p=Minos -l Minos/RPI.Platform.Mod Minos/ARM.FPE64.Mod Minos/ARM.Builtins.Mod Minos/Heaps.Mod Minos/RPI.UartMin.Mod Minos/RPI.Kernel.Mod Minos/Utils.Mod Minos/Strings.Mod Minos/Device.Mod Minos/RPI.Uart.Mod Minos/Log.Mod Minos/SerialLog.Mod Minos/OFS.Mod Minos/OFSRamVolumes.Mod Minos/Tools.Mod Minos/Modules.Mod Minos/Minos.Mod Minos/Out.Mod Minos/In.Mod TestAllocation.Mod ~
+
+Compiler.Compile -p=ARM Minos/RPI.MinimalInit.Mod ~
+
+Linker.Link --fileName=minimalinit.img --extension=.Goa --displacement=8000H -sa MinimalInit ~
+
+MinosLinker.Link minimalinit.img 108000H kernel.img OFSRamVolumes SerialLog Minos ~

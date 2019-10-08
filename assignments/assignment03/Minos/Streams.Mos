@@ -1,0 +1,507 @@
+(* ported version of Minos to work with the ARM backend of the Fox Compiler Suite *)
+(* ETH Oberon, Copyright 2006 ETH Zuerich Institut fuer Computersysteme, ETH Zentrum, CH-8092 Zuerich.
+Refer to the "General ETH Oberon System Source License" contract available at: http://www.oberon.ethz.ch/ *)
+
+MODULE Streams;	(** portable *)
+	IMPORT SYSTEM, OFS;
+
+	CONST
+		Closed* = 0; Error* = 1; In* = 2; Out* = 3; InOut* = 4;
+		MaxInteger* = MAX(LONGINT);
+		ArrayStreamSize = 2048;
+		CircularStreamSize = 2048;
+
+	TYPE
+		StreamResetProcedure = PROCEDURE (s: Stream);
+	
+		Stream* = POINTER TO StreamDesc;
+		StreamDesc* = RECORD
+			ReadBytes*: PROCEDURE (S: Stream; VAR x: ARRAY OF SYSTEM.BYTE; n: LONGINT);
+			WriteBytes*: PROCEDURE (S: Stream; CONST x: ARRAY OF SYSTEM.BYTE; n: LONGINT);
+			Available*: PROCEDURE (S: Stream): LONGINT; (* returns the number of bytes which may read without blocking *)
+			State*: PROCEDURE (S: Stream): LONGINT; (* closed, error, in, out, inout *)
+			Flush*: PROCEDURE (S: Stream); (* flush all buffers of the stream *)
+			Close*: PROCEDURE (S: Stream); (* close the stream *)
+			Reset*: StreamResetProcedure; (* Reset the stream to the initial settings *)
+			res*: LONGINT; (* bytes requested but not read/written *)
+			eos*: BOOLEAN (* set, when either the end of the stream is reached or the stream is closed. *)
+		END;
+
+		FileStream* = POINTER TO FileStreamDesc;
+		FileStreamDesc* = RECORD (StreamDesc)
+			R: OFS.Rider;
+			ch: CHAR;
+			state: LONGINT;
+			initPos: LONGINT
+		END;
+
+		ArrayStream* = POINTER TO ArrayStreamDesc;
+		ArrayStreamDesc* = RECORD (StreamDesc)
+			GetArray*: PROCEDURE(S: ArrayStream; VAR data: ARRAY OF SYSTEM.BYTE; ofs: LONGINT);
+			PutArray*: PROCEDURE(S: ArrayStream; VAR data: ARRAY OF SYSTEM.BYTE; ofs: LONGINT; VAR len: LONGINT );
+			state: LONGINT;
+			index: LONGINT;
+			initPos: LONGINT;
+			buf: ARRAY ArrayStreamSize OF SYSTEM.BYTE	(* If possible, this should be done dynamically *)
+		END;
+
+		CircularStream* = POINTER TO CircularStreamDesc;
+		CircularStreamDesc* = RECORD (StreamDesc)
+			Free*: PROCEDURE(S: Stream):LONGINT;
+			state: LONGINT;
+			in, out: LONGINT;
+			buf: ARRAY CircularStreamSize OF SYSTEM.BYTE	(* If possible, this should be done dynamically *)
+		END;			
+
+	VAR
+		NULL*: Stream; (** a stream which does nothing *)
+
+(** on any streams *)
+	
+	PROCEDURE InitStream( S: Stream );
+	BEGIN
+		IF S # NIL THEN
+			S^ := NULL^	(* Init the Stream to the default NULL Stream *)
+		END;
+	END InitStream;
+
+	PROCEDURE Read*(S: Stream; VAR x: CHAR);
+	BEGIN
+		S.ReadBytes(S, x, 1)
+	END Read;
+
+	PROCEDURE Write*(S: Stream; x: CHAR);
+	BEGIN
+		S.WriteBytes(S, x, 1)
+	END Write;
+
+(** on binary streams *)
+(** Portable routines to write and read the standard Oberon types. Each procedure is provided in a read and write pair. *)
+
+	PROCEDURE ReadBool*(S: Stream; VAR x: BOOLEAN);
+	BEGIN
+		S.ReadBytes(S, x, 1)
+	END ReadBool;
+
+	PROCEDURE ReadInt*(S: Stream; VAR x: LONGINT);
+	BEGIN
+		S.ReadBytes(S, x, 4)
+	END ReadInt;
+
+	PROCEDURE ReadReal*(S: Stream; VAR x: REAL);
+	BEGIN
+		S.ReadBytes(S, x, 4)
+	END ReadReal;
+
+	PROCEDURE ReadSet*(S: Stream; VAR x: SET);
+	BEGIN
+		S.ReadBytes(S, x, 4)
+	END ReadSet;
+
+	PROCEDURE ReadString*(S: Stream; VAR x: ARRAY OF CHAR);
+		VAR
+			i: LONGINT;
+			ch: CHAR;
+	BEGIN
+		i := 0;
+		REPEAT
+			S.ReadBytes(S, ch, 1); x[i] := ch; INC(i)
+		UNTIL ch = 0X
+	END ReadString;
+
+	PROCEDURE WriteBool*(S: Stream; x: BOOLEAN);
+	BEGIN
+		S.WriteBytes(S, x, 1)
+	END WriteBool;
+
+	PROCEDURE WriteInt*(S: Stream; x: LONGINT);
+	BEGIN
+		S.WriteBytes(S, x, 4)
+	END WriteInt;
+
+	PROCEDURE WriteReal*(S: Stream; x: REAL);
+	BEGIN
+		S.WriteBytes(S, x, 4)
+	END WriteReal;
+
+	PROCEDURE WriteSet*(S: Stream; x: SET);
+	BEGIN
+		S.WriteBytes(S, x, 4)
+	END WriteSet;
+
+	PROCEDURE WriteString*(S: Stream; CONST x: ARRAY OF CHAR);
+		VAR i: LONGINT;
+	BEGIN
+		i := 0;
+		WHILE (i < LEN(x) - 1) & (x[i] # 0X) DO INC(i) END;
+		S.WriteBytes(S, x, i);
+		Write(S, 0X);		(* Make sure the 0 is written *)
+	END WriteString;
+	
+	PROCEDURE Reset*(S: Stream);
+	BEGIN
+		S.Reset(S);
+	END Reset;
+
+	PROCEDURE NULLReadBytes(S: Stream; VAR x: ARRAY OF SYSTEM.BYTE; n: LONGINT);
+	BEGIN
+	END NULLReadBytes;
+
+	PROCEDURE NULLWriteBytes(S: Stream; CONST x: ARRAY OF SYSTEM.BYTE; n: LONGINT);
+	BEGIN
+	END NULLWriteBytes;
+
+	PROCEDURE NULLAvailable(S: Stream): LONGINT;
+	BEGIN
+		RETURN 0
+	END NULLAvailable;
+
+	PROCEDURE NULLState(S: Stream): LONGINT;
+	BEGIN
+		RETURN Error
+	END NULLState;
+
+	PROCEDURE NULLFlush(S: Stream);
+	BEGIN
+	END NULLFlush;
+
+	PROCEDURE NULLClose(S: Stream);
+	BEGIN
+		S.eos := TRUE
+	END NULLClose;
+	
+	PROCEDURE NULLReset(S: Stream);
+	BEGIN
+	END NULLReset;
+
+
+	PROCEDURE ReadFileBytes(S: Stream; VAR x: ARRAY OF SYSTEM.BYTE; n: LONGINT);
+		VAR pos: LONGINT;
+		FS: FileStream;
+	BEGIN
+		pos := 0;
+		FS := S(FileStream);
+		WHILE ~FS.eos & (n > 0) DO 
+			x[pos] := FS.ch; (* todo, make more beautiful. Hack: SYSTEM.PUT(SYSTEM.ADR(x[pos]), FS.ch) *)
+			INC(pos); DEC(n);
+			OFS.Read(FS.R, FS.ch); FS.eos := FS.R.eof
+		END;
+		S.res := n
+	END ReadFileBytes;
+
+	PROCEDURE WriteFileBytes(S: Stream; CONST x: ARRAY OF SYSTEM.BYTE; n: LONGINT);
+	VAR
+		FS: FileStream;
+	BEGIN
+		FS := S(FileStream);
+		OFS.WriteBytes(FS.R, x, n);
+		FS.eos := FALSE; FS.res := 0
+	END WriteFileBytes;
+
+	PROCEDURE FileAvailable(S: Stream): LONGINT;
+	VAR FS: FileStream;
+	BEGIN
+		FS := S(FileStream);
+		RETURN OFS.Length(FS.R.file) - OFS.Pos(FS.R)
+	END FileAvailable;
+
+	PROCEDURE FileState(S: Stream): LONGINT;
+	BEGIN
+		RETURN S(FileStream).state
+	END FileState;
+
+	PROCEDURE FileFlush(S: Stream);
+	BEGIN
+		OFS.Close(S(FileStream).R.file);
+	END FileFlush;
+
+	PROCEDURE FileClose(S: Stream);
+	VAR
+		FS: FileStream;
+	BEGIN
+		FS := S(FileStream);
+		FS.Flush(FS);
+		OFS.Set(FS.R, NIL, 0);
+		FS.eos := TRUE; FS.state := Closed
+	END FileClose;
+
+	PROCEDURE FilePos*(S: FileStream): LONGINT;
+	BEGIN
+		RETURN OFS.Pos(S.R)
+	END FilePos;
+
+	PROCEDURE FileReset(S: Stream);
+	VAR
+		s: FileStream;
+	BEGIN
+		s := S(FileStream);
+		OFS.Set(s.R, s.R.file, s.initPos);
+	END FileReset;
+
+(** Opens a stream reading on file F starting at postion pos. *)
+	PROCEDURE OpenFileReader*(F: OFS.File; pos: LONGINT): Stream;
+		VAR S: FileStream;
+	BEGIN
+		NEW(S); InitStream(S);
+		S.state := Out;
+		S.res := 0; OFS.Set(S.R, F, pos);
+		S.initPos := pos;
+		S.ReadBytes := ReadFileBytes; S.eos := OFS.Length(F) <= 0;
+		OFS.Read(S.R, S.ch);
+		S.WriteBytes := NULL.WriteBytes;
+		S.Available := FileAvailable;
+		S.State := FileState;
+		S.Flush := FileFlush;
+		S.Close := FileClose;
+		S.Reset := FileReset;
+		RETURN S
+	END OpenFileReader;
+
+(** Opens a stream writeing on file F starting at postion pos. *)
+	PROCEDURE OpenFileWriter*(F: OFS.File; pos: LONGINT): Stream;
+		VAR S: FileStream;
+	BEGIN
+		NEW(S); InitStream(S);
+		S.state := In;
+		S.res := 0; OFS.Set(S.R, F, pos); S.eos := FALSE;
+		S.initPos := pos;
+		S.ReadBytes := NULL.ReadBytes; 
+		S.WriteBytes := WriteFileBytes;
+		S.Available := FileAvailable;
+		S.State := FileState;
+		S.Flush := FileFlush;
+		S.Close := FileClose;
+		S.Reset := FileReset;
+		RETURN S
+	END OpenFileWriter;
+
+	PROCEDURE Copy*(src, dest: Stream);
+		VAR
+			buf: ARRAY 128 OF CHAR;
+			len: LONGINT;
+	BEGIN
+		WHILE ~src.eos DO
+			len := src.Available(src);
+			IF len > 128 THEN len := 128 END;
+			src.ReadBytes(src, buf, len);
+			dest.WriteBytes(dest, buf, len-src.res)
+		END;
+		dest.Flush(dest)
+	END Copy;
+	
+	PROCEDURE ArrayReadBytes(S: Stream; VAR x: ARRAY OF SYSTEM.BYTE; n: LONGINT);
+	VAR 
+		pos: LONGINT;
+		AS: ArrayStream;
+	BEGIN
+		pos := 0;
+		AS := S(ArrayStream);
+		WHILE ~AS.eos & (n > 0) DO 
+			x[pos] := AS.buf[AS.index];
+			INC(AS.index); INC(pos); DEC(n);
+			AS.eos := (AS.index >= LEN(AS.buf)) 
+		END;
+		S.res := n
+	END ArrayReadBytes;
+
+	PROCEDURE ArrayWriteBytes(S: Stream; CONST x: ARRAY OF SYSTEM.BYTE; n: LONGINT);
+	VAR 
+		pos: LONGINT;
+		AS: ArrayStream;
+	BEGIN
+		pos := 0;
+		AS := S(ArrayStream);
+		WHILE ~AS.eos & (n > 0) DO 
+			AS.buf[AS.index] := x[pos];
+			INC(AS.index); INC(pos); DEC(n);
+			AS.eos := (AS.index >= LEN(AS.buf))
+		END;
+		S.res := n
+	END ArrayWriteBytes;
+
+	PROCEDURE ArrayAvailable(S: Stream): LONGINT;
+	BEGIN
+		RETURN S(ArrayStream).index - S(ArrayStream).initPos
+	END ArrayAvailable;
+
+	PROCEDURE ArrayState(S: Stream): LONGINT;
+	BEGIN
+		RETURN S(ArrayStream).state
+	END ArrayState;
+
+	(* Retrieve the data from a ArrayStream *)
+	PROCEDURE GetArray(S: ArrayStream; VAR data: ARRAY OF SYSTEM.BYTE; ofs: LONGINT);
+	VAR
+		i, len: LONGINT;
+	BEGIN
+		len := S.index - S.initPos;
+		IF len > LEN(data) THEN len := LEN(data); END;
+		i := S.initPos;
+		WHILE len > 0 DO
+			data[ofs] := S.buf[i];
+			INC(ofs); INC(i); DEC(len);
+		END;
+	END GetArray;
+
+	PROCEDURE NullPutArray(S: ArrayStream; VAR data: ARRAY OF SYSTEM.BYTE; ofs: LONGINT; VAR len: LONGINT );
+	BEGIN
+	END NullPutArray;
+
+	PROCEDURE NullGetArray(S: ArrayStream; VAR data: ARRAY OF SYSTEM.BYTE; ofs: LONGINT);
+	BEGIN
+	END NullGetArray;
+
+	PROCEDURE PutArray(S: ArrayStream; VAR data: ARRAY OF SYSTEM.BYTE; ofs: LONGINT; VAR len: LONGINT );
+	VAR
+		pos, tempLen: LONGINT;
+	BEGIN
+		tempLen := len;
+		IF len > (LEN(S.buf) - S.initPos) THEN 
+			tempLen := LEN(S.buf) - S.initPos; 
+		END;
+		len := len - tempLen;
+
+		pos := S.initPos;
+		WHILE tempLen > 0 DO
+			S.buf[pos] := data[ofs];
+			INC(ofs); INC(pos); DEC(tempLen);
+		END;
+	END PutArray;
+
+	PROCEDURE ArrayReset(S: ArrayStream);
+	BEGIN
+		S(ArrayStream).index := S(ArrayStream).initPos;
+		S(ArrayStream).eos := (S(ArrayStream).index >= LEN(S(ArrayStream).buf));
+		S(ArrayStream).res := 0;
+	END ArrayReset;
+
+	(** Opens a stream reading on file F starting at postion pos. *)
+	PROCEDURE OpenArrayReader*(VAR array: ARRAY OF CHAR; pos: LONGINT): Stream;
+	VAR
+		i: LONGINT;
+		S: ArrayStream;
+	BEGIN
+		NEW(S); InitStream(S);
+		
+		FOR i := 0 TO LEN(array) - 1 DO S.buf[i] := array[i] END;
+		(* original line:
+		S.buf := array;		(* Quite slow, I know, but no pointers to arrays exist *)
+		*)
+		S.index := pos;
+		S.initPos := pos;
+		S.state := Out;
+		S.res := 0;
+		S.ReadBytes := ArrayReadBytes;
+		S.WriteBytes := NULL.WriteBytes;
+		S.Available := ArrayAvailable;
+		S.State := ArrayState;
+		S.Reset := SYSTEM.VAL(StreamResetProcedure, ArrayReset);
+		S.GetArray := NullGetArray;
+		S.PutArray := PutArray;
+		RETURN S
+	END OpenArrayReader;
+
+(** Opens a stream writeing on file F starting at postion pos. *)
+	PROCEDURE OpenArrayWriter*(VAR array: ARRAY OF CHAR; pos: LONGINT): Stream;
+	VAR
+		i: LONGINT; S: ArrayStream;
+	BEGIN
+		NEW(S); InitStream(S);
+		
+		FOR i := 0 TO LEN(array) - 1 DO S.buf[i] := array[i] END;
+		(* original line:
+		S.buf := array;		(* Quite slow, I know, but no pointers to arrays exist *)
+		*)
+		S.index := pos;
+		S.res := 0;  S.eos := FALSE;
+		S.state := In;
+		S.ReadBytes := NULL.ReadBytes; 
+		S.WriteBytes := ArrayWriteBytes;
+		S.Available := ArrayAvailable;
+		S.State := ArrayState;
+		S.Reset := SYSTEM.VAL(StreamResetProcedure, ArrayReset);
+		S.GetArray := GetArray;
+		S.PutArray := NullPutArray;
+		S.initPos := pos;
+		RETURN S
+	END OpenArrayWriter;
+
+	PROCEDURE CircularReadBytes(S: Stream; VAR x: ARRAY OF SYSTEM.BYTE; n: LONGINT);
+	VAR 
+		pos: LONGINT;
+		CS: CircularStream;
+	BEGIN
+		pos := 0;
+		CS := S(CircularStream);
+		WHILE (CS.in # CS.out) & (n > 0) DO 
+			x[pos] := CS.buf[CS.out];
+			CS.out := (CS.out + 1) MOD CircularStreamSize; 
+			INC(pos); DEC(n);
+		END;
+		CS.eos := (CS.in = CS.out);
+		S.res := n
+	END CircularReadBytes;
+
+	PROCEDURE CircularWriteBytes(S: Stream; CONST x: ARRAY OF SYSTEM.BYTE; n: LONGINT);
+	VAR
+		pos, free: LONGINT;
+		CS: CircularStream;
+	BEGIN
+		pos := 0;
+		CS := S(CircularStream);
+		free := CS.Free(CS);
+		WHILE (free > 0) & (n > 0) DO 
+			CS.buf[CS.in] := x[pos];
+			CS.in := (CS.in + 1) MOD CircularStreamSize; 
+			INC(pos); DEC(n); DEC(free);
+		END;
+		CS.eos := (free = 0);
+		S.res := n
+	END CircularWriteBytes;
+
+	PROCEDURE CircularAvailable(S: Stream): LONGINT;
+	BEGIN
+		RETURN (S(CircularStream).in - S(CircularStream).out) MOD CircularStreamSize
+	END CircularAvailable;
+
+	PROCEDURE CircularState(S: Stream): LONGINT;
+	BEGIN
+		RETURN S(CircularStream).state
+	END CircularState;
+
+	PROCEDURE CircularReset(S: Stream);
+	BEGIN
+		S(CircularStream).in := 0;
+		S(CircularStream).out := 0;
+		S(CircularStream).res := 0;
+		S(CircularStream).eos := FALSE;
+	END CircularReset;
+
+	PROCEDURE CircularFree(S: Stream): LONGINT;
+	BEGIN
+		RETURN CircularStreamSize - 1 - ((S(CircularStream).in - S(CircularStream).out) MOD CircularStreamSize)
+	END CircularFree;
+
+(** Opens a stream writeing on file F starting at postion pos. *)
+	PROCEDURE OpenCircular*(): Stream;
+		VAR S: CircularStream;
+	BEGIN
+		NEW(S); InitStream(S);
+		S.in := 0; S.out := 0;
+		S.res := 0;  S.eos := FALSE;
+		S.state := InOut;
+		S.ReadBytes := CircularReadBytes; 
+		S.WriteBytes := CircularWriteBytes;
+		S.Available := CircularAvailable;
+		S.State := CircularState;
+		S.Reset := CircularReset;
+		S.Free := CircularFree;
+		RETURN S
+	END OpenCircular;
+	
+BEGIN
+	NEW(NULL); NULL.eos := FALSE; NULL.res := MaxInteger;
+	NULL.ReadBytes := NULLReadBytes; NULL.WriteBytes := NULLWriteBytes;
+	NULL.Available := NULLAvailable; NULL.State := NULLState;
+	NULL.Flush := NULLFlush; NULL.Close := NULLClose; NULL.Reset := NULLReset;
+END Streams.

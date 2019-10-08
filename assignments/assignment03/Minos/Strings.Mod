@@ -1,0 +1,325 @@
+MODULE Strings; 
+(*
+	This is a small library of common string manipulation command such as find, compare,
+	append, etc.
+*)
+
+	IMPORT SYSTEM, Utils;
+
+	CONST 
+
+	(* Get the length of a string including terminating 0X *)
+	PROCEDURE Length*(CONST s: ARRAY OF CHAR): SIZE; 
+		VAR length: SIZE; 
+	BEGIN 
+		length := 0; 
+		REPEAT INC(length)
+		UNTIL (length >= LEN(s)) OR (s[length - 1] = 0X); 
+		RETURN length
+	END Length; 
+	
+	(* Return the minumum vaule of two given integers *)
+	PROCEDURE Min(a, b: INTEGER): INTEGER; 
+	BEGIN 
+		IF b < a THEN a := b END; 
+		RETURN a
+	END Min; 
+
+	(* Compares two strings.
+		0: The two Strings are equal
+		<0: The first unequal character in the first string of the two strings is smaller (ascii value)
+		>0: The first unequal character in the first string of the two strings is larger (ascii value) *)
+	PROCEDURE Compare*(CONST s1, s2: ARRAY OF CHAR): INTEGER; 
+		VAR i, len: SIZE; 
+	BEGIN 
+		i := 0; 
+		len := Min(LEN(s1) - 1, LEN(s2) - 1);
+		WHILE (i < len) & (s1[i] = s2[i]) & (s1[i] # 0X) & (s2[i] # 0X) DO INC(i) END; 
+		RETURN ORD(s1[i]) - ORD(s2[i])
+	END Compare; 
+
+	(* Returns TRUE if s1 and s2 are equal. The case of all characters is ignored *)
+	PROCEDURE EqualIgnoreCase*(CONST s1, s2: ARRAY OF CHAR): BOOLEAN; 
+		VAR i, len: SIZE; 
+	BEGIN 
+		i := 0; len := Min(LEN(s1) - 1, LEN(s2) - 1); 
+		WHILE (i < len) & (CAP(s1[i]) = CAP(s2[i])) & (s1[i] # 0X) & (s2[i] # 0X) DO INC(i); END; 
+		RETURN CAP(s1[i]) = CAP(s2[i])
+	END EqualIgnoreCase; 
+
+	(* Convert a string (ascii reoresentation of a number) to an integer *)
+	PROCEDURE StrToInt*(CONST str: ARRAY OF CHAR; VAR val: INTEGER; VAR res: BOOLEAN); 
+		VAR i, d: INTEGER; neg: BOOLEAN; ch: CHAR; 
+	BEGIN 
+		res := TRUE;
+		i := 0; ch := str[0]; 
+		WHILE (ch # 0X) & (ch <= ' ') DO INC(i); ch := str[i] END; 
+		neg := FALSE; 
+		IF ch = '+' THEN INC(i); ch := str[i] END; 
+		IF ch = '-' THEN neg := TRUE; INC(i); ch := str[i] END; 
+		WHILE (ch # 0X) & (ch <= ' ') DO INC(i); ch := str[i] END; 
+		val := 0; 
+		WHILE (ch >= '0') & (ch <= '9') DO 
+			d := ORD(ch) - ORD('0'); INC(i); ch := str[i]; 
+			IF val <= ((MAX(SIGNED32) - d) DIV 10) THEN 
+				val := 10 * val + d
+			ELSIF neg & (val = 214748364) & (d = 8) & ((ch < '0') OR (ch > '9')) THEN 
+				val := MIN(SIGNED32); neg := FALSE 
+			ELSE 
+				(* Invalid number found -> set res to FALSE and abort loop *)
+				res := FALSE;
+				ch := 0X;
+			END 
+		END; 
+		IF neg THEN val := -val END 
+	END StrToInt; 
+
+	(* Finds the first occurrence of character ch in string s starting at pos start in s and returns the
+		index. Returns -1 if ch cannot be found *)
+	PROCEDURE Find*(ch: CHAR; CONST s: ARRAY OF CHAR; start: SIZE): SIZE; 
+		VAR found: SIZE; 
+	BEGIN 
+		found := -1; 
+		WHILE (start < LEN(s)) & (s[start] # 0X) & (s[start] # ch) DO INC(start); END; 
+		IF (start < LEN(s)) & (s[start] = ch) THEN found := start; END; 
+		RETURN found
+	END Find; 
+
+	(* Find in s the string stored in pat and start searching in s at location start.
+		Returns -1 if not found, otherwise the index of the first found character in s *)
+	PROCEDURE FindString*(CONST pat, s: ARRAY OF CHAR; start: SIZE): SIZE; 
+		VAR found, i, patLen, sLen: SIZE;
+	BEGIN 
+		found := -1; patLen := LEN(pat); sLen := LEN(s); 
+		WHILE (start < sLen) & (s[start] # 0X) & (found = -1) DO 
+			i := 0; 
+			WHILE (i < patLen) & (pat[i] = s[start + i]) & (pat[i] # 0X) & (s[i] # 0X) DO 
+				INC(i)
+			END; 
+			IF i = patLen THEN found := start END; 
+			INC(start)
+		END;
+		RETURN found
+	END FindString; 
+
+	(* Copy the whole string (0X terminated) from source to derst
+		In contrast to the assignment dest := source, only the 0X terminated
+		part of source is copied to dest. *)
+	PROCEDURE Copy*(CONST source: ARRAY OF CHAR; VAR dest: ARRAY OF CHAR); 
+		VAR i: SIZE; 
+	BEGIN 
+		i := 0; 
+		REPEAT dest[i] := source[i]; INC(i) 
+		UNTIL (dest[i - 1] = 0X) OR (LEN(source) = i) OR (LEN(dest) = i); 
+		IF i < LEN(dest) THEN dest[i] := 0X ELSE dest[i - 1] := 0X END;  (*@4 fof: if source was not 0X terminated *)
+	END Copy; 
+
+	(* Convert integer val to a 0X terminated string and store it in str. *)
+	PROCEDURE IntToStr*(val: INTEGER; VAR str: ARRAY OF CHAR); 
+	VAR i, j: SIZE; digits: ARRAY 16 OF INTEGER; 
+	BEGIN 
+		IF val = MIN(INTEGER) THEN 
+			str := "-2147483648"; 
+		ELSE 
+			i := 0; 
+			IF val < 0 THEN 
+				val := -val; str[0] := '-'; j := 1 
+			ELSE 
+				j := 0 
+			END; 
+
+			REPEAT 
+				digits[i] := val MOD 10; 
+				INC(i); 
+				val := val DIV 10 
+			UNTIL val = 0; 
+
+			DEC(i);
+			
+			WHILE i >= 0 DO
+				str[j] := CHR(digits[i] + ORD('0'));
+				INC(j);
+				DEC(i)
+			END; 
+			str[j] := 0X; 
+		END; 
+	END IntToStr; 
+
+	(* Convert boolean value into a string *)
+	PROCEDURE BoolToStr*(CONST bool: BOOLEAN; VAR str: ARRAY OF CHAR);  
+	BEGIN 
+		IF bool THEN
+			str := "True";
+		ELSE
+			str := "False";
+		END;
+	END BoolToStr; 
+
+	(* Convert a string into a boolean *)
+	PROCEDURE StrToBool*(CONST str: ARRAY OF CHAR; VAR bool: BOOLEAN; VAR res: BOOLEAN); 
+	BEGIN 
+		res := TRUE;
+		IF EqualIgnoreCase(str, "true") THEN
+			bool := TRUE;
+		ELSIF EqualIgnoreCase(str, "false") THEN
+			bool := FALSE;
+		ELSE
+			res := FALSE;
+		END;
+	END StrToBool;
+
+	(* Returns the shifted binary exponent of a real (0 <= e < 256 *)
+	PROCEDURE Expo*(x: FLOAT32): INTEGER; 
+		VAR e: INTEGER;
+	BEGIN 
+		(* Replaced the following code with safe variant *)
+		(* RETURN ASR(SYSTEM.VAL(LONGINT, x), 23) MOD 256 *)
+		Utils.UNPK(x, e);
+		RETURN (e + 127) MOD 256
+	END Expo; 
+
+	(* Returns 10^e (e <= 308, 308 < e delivers IEEE-code +INF). *)
+	PROCEDURE Ten(e: INTEGER): FLOAT32; 
+		VAR res: FLOAT32; 
+	BEGIN 
+		(* hack! *)
+		IF e < -38 THEN 
+			res := 0.0; 
+		ELSIF e > 38 THEN 
+			res := MAX(FLOAT32); 
+		ELSE 
+			res := 1.0; 
+			WHILE (e > 0) DO res := res * 10.0; DEC(e); END; 
+			WHILE (e < 0) DO res := res / 10.0; INC(e); END; 
+		END; 
+		RETURN res
+	END Ten; 
+
+	(* Returns the NaN code (0 <= c < 8399608) or -1 if not NaN/Infinite. *)
+	PROCEDURE NaNCode(x: FLOAT32): SIGNED32; 
+		VAR l: SIGNED32; 
+	BEGIN 
+ 		IF Expo(x) = 255 THEN (* Infinite or NaN *)
+			l := SYSTEM.VAL(SIGNED32, x) MOD 800000H;
+		ELSE 
+			l := -1; 
+		END; 
+		RETURN l
+	END NaNCode;
+
+	(* Append "this" to "to". Copies as much as is possible to "to" (0X terminated) *)
+	PROCEDURE Append*(VAR to: ARRAY OF CHAR; CONST this: ARRAY OF CHAR); 
+		VAR i, j: SIZE; 
+	BEGIN 
+		i := 0; j := 0; 
+
+		WHILE (i < LEN(to)) & (to[i] # 0X) DO 
+			INC(i) 
+		END; 
+
+		WHILE (i < LEN(to)) & (j < LEN(this)) & (this[j] # 0X) DO
+			 to[i] := this[j]; 
+			 INC(i); INC(j)
+		END; 
+		
+		(* 0X terminate the string *)
+		IF j > 0 THEN (* tt: Appending of the empty string must not result in a trap *)
+			IF (this[j - 1] = 0X) OR (i = LEN(to)) THEN 
+				to[i - 1] := 0X 
+			ELSE 
+				to[i] := 0X 
+			END;  (*@4 fof: if source was not 0X terminated *)
+		END; 
+	END Append; 
+
+	(* Append a character at the end of a string *)
+	PROCEDURE AppendChar*(VAR to: ARRAY OF CHAR; c: CHAR); 
+		VAR str: ARRAY 4 OF CHAR; 
+	BEGIN 
+		str[0] := c; str[1] := 0X; Append(to, str); 
+	END AppendChar; 
+
+	(** Write real x to buffer str as ascii text *)
+	PROCEDURE AppendReal*(VAR str: ARRAY OF CHAR; x: FLOAT32); 
+		VAR 
+			e, h, i, n: INTEGER; 
+			y, z, temp05: FLOAT32;
+			d: ARRAY 8 OF CHAR;  
+	BEGIN 
+		n := 14;  (* larger number of n do not really make sense *)
+		e := Expo(x); 
+		IF e = 255 THEN 
+			WHILE n > 8 DO AppendChar(str, ' '); DEC(n) END; 
+			h := NaNCode(x);
+			IF h # 0 THEN Append(str, "   NaN")
+			ELSIF x < 0.0 THEN Append(str, "  -INF")
+			ELSE Append(str, "   INF")
+			END 
+		ELSE 
+			IF n <= 7 THEN n := 0 ELSE DEC(n, 7) END; 
+			WHILE (n > 7) DO AppendChar(str, ' '); DEC(n) END;  (* 0 <= n <= 7 fraction digits *)
+			IF (e # 0) & (x < 0.0) THEN AppendChar(str, '-'); x := -x 
+			ELSE AppendChar(str, ' ')
+			END; 
+			IF e = 0 THEN 
+				h := 0 (* no denormals *)
+			ELSE 
+				e := (e - 127) * 301 DIV 1000;  (* ln(2)/ln(10) = 0.301029996 *)
+				IF e < 38 THEN 
+					z := Ten(e + 1); 
+					IF x >= z THEN y := x / z; INC(e) ELSE y := x * Ten(-e) END 
+				ELSE y := x * Ten(-38)
+				END; 
+				IF y >= 10.0 THEN y := y * Ten(-1); y := y + 0.5E0 / Ten(n); INC(e) 
+				ELSE 
+					temp05 := 0.5E0; (* Otherwise not compilable *)
+					y := y + temp05 / Ten(n); 
+					IF y >= 10.0 THEN y := y * Ten(-1); INC(e) END 
+				END; 
+				y := y * Ten(7); h := ENTIER(y)
+			END; 
+			i := 7; 
+			WHILE i >= 0 DO d[i] := CHR(h MOD 10 + ORD('0')); h := h DIV 10; DEC(i) END; 
+			AppendChar(str, d[0]); AppendChar(str, '.'); i := 1; 
+			WHILE i <= n DO AppendChar(str, d[i]); INC(i) END; 
+			IF e < 0 THEN Append(str, "E-"); e := -e ELSE Append(str, "E+") END; 
+			i := e DIV 10; AppendChar(str, CHR(i + ORD('0'))); i := e MOD 10; 
+			AppendChar(str, CHR(i + ORD('0')))
+		END
+	END AppendReal; 
+
+	(* Append an integer to a string *)
+	PROCEDURE AppendInt*(VAR to: ARRAY OF CHAR; i: INTEGER); 
+		VAR str: ARRAY 64 OF CHAR; 
+	BEGIN 
+		IntToStr(i, str); Append(to, str); 
+	END AppendInt; 
+
+	(* Append a set to a string *)
+	PROCEDURE AppendSet*(VAR to: ARRAY OF CHAR; s: SET); 
+		VAR first: BOOLEAN; i: INTEGER; 
+	BEGIN 
+		first := TRUE; AppendChar(to, '{'); 
+		FOR i := 0 TO 31 DO 
+			IF i IN s THEN 
+				IF ~first THEN AppendChar(to, ',') END; 
+				first := FALSE; AppendInt(to, i); 
+			END 
+		END; 
+		AppendChar(to, '}'); 
+	END AppendSet; 
+
+	(* Append a boolean to a string *)
+	PROCEDURE AppendBool*(VAR to: ARRAY OF CHAR; b: BOOLEAN); 
+	BEGIN 
+		IF b THEN Append(to, "TRUE") ELSE Append(to, "FALSE") END; 
+	END AppendBool; 
+
+	(* Convert a real to a string *)
+	PROCEDURE RealToStr*(r: FLOAT32; VAR str: ARRAY OF CHAR); 
+	BEGIN 
+		str[0] := 0X; AppendReal(str, r); 
+	END RealToStr; 
+
+
+END Strings.

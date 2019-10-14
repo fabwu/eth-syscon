@@ -1,0 +1,4 @@
+V24.Map 5 /dev/ttyUSB0 ~
+Zeus.Connect 5 ~
+Zeus.Cmd Minos.ShowModules ~
+

@@ -1,8 +1,0 @@
-MODULE Hello;
-	IMPORT Out, Platform;
-CONST 
-
-	PROCEDURE ^ World*; 
-	PROCEDURE ^ Blink*; 
-BEGIN
-END Hello.

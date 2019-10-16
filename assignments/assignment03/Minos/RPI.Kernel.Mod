@@ -57,7 +57,8 @@ MODULE Kernel; (*The Kernel for Raspberry Pi. (c) Felix Friedrich 2015 *)
 	(*! STUDENT
 		you may want to add global variables for the current state of stack / heap allocation 
 	*)
-
+		stack_bottom: ADDRESS;
+		heap_top: ADDRESS;
 
 	(* Copy procedure like SYSTEM.MOVE. src and dst must be Aligned to 32 bit addresses *)
 	PROCEDURE Move*(src, dst: ADDRESS; len: SIZE);
@@ -354,8 +355,31 @@ MODULE Kernel; (*The Kernel for Raspberry Pi. (c) Felix Friedrich 2015 *)
 				Q: If you were to design heap / stack allocation: where would you handle heap overflow exceptions ?
 			*)
 
-			(* Check for overflow: used heap and stack pages collide *)
+			IF (abortAdr - heap_top) < (stack_bottom - abortAdr) THEN
+				UartMin.Str("HEAP needs more");
+				UartMin.Ln;
 
+				heap_top := abortAdr;
+				MapMemoryPage(heap_top, heap_top);
+			ELSE
+				UartMin.Str("STACK needs more");
+				UartMin.Ln;
+
+				stack_bottom := abortAdr;
+				MapMemoryPage(stack_bottom, stack_bottom);
+			END;
+
+			UartMin.Str("Heap: "); UartMin.Hex(heap_top);
+			UartMin.Str(" Stack: "); UartMin.Hex(stack_bottom);
+			UartMin.Str(" Next: "); UartMin.Hex(stack_bottom+MB);
+			UartMin.Ln;
+
+			(* Check for overflow: used heap and stack pages collide *)
+			IF stack_bottom + MB <= heap_top THEN
+				UartMin.Str("Overflow!");
+				UartMin.Ln;
+				Reset();
+			END;
 		ELSE
 			IF trapHandler # NIL THEN
 				resFP := 0;
@@ -481,6 +505,8 @@ MODULE Kernel; (*The Kernel for Raspberry Pi. (c) Felix Friedrich 2015 *)
 
 	(* Init the memory management unit *)
 	PROCEDURE InitMMU;
+	VAR
+		index: ADDRESS;
 	BEGIN
 		Platform.DisableMemoryManagementUnit;
 		Platform.pageTable[0] := 0; (* unmap page *)
@@ -490,7 +516,13 @@ MODULE Kernel; (*The Kernel for Raspberry Pi. (c) Felix Friedrich 2015 *)
 			make sure the mapping is set up correctly, otherwise there are no page faults ....
 			You also want to initialize the last used heap / stack page variables here
 		*)
-		
+		stack_bottom := Platform.SVCSP - MB;
+		heap_top := Platform.HeapBase + MB;
+
+		FOR index := heap_top DIV MB TO (stack_bottom DIV MB) - 1 DO 
+			Platform.pageTable[index] := 0;
+		END;
+
 		Platform.EnableMemoryManagementUnit;
 	END InitMMU;
 

@@ -2,3 +2,5 @@
 *.log
 *.arm
 *.Sym
+*.Sya
+*.Goa

@@ -1,0 +1,302 @@
+(* ported version of Minos to work with the ARM backend of the Fox Compiler Suite *)
+MODULE Device;   (* Author: tt, Purpose: Driver Registry *)
+
+IMPORT SYSTEM, UartMin;
+
+CONST 
+	(* Maximum length of a device name *)
+	DeviceNameLength* = 32;
+
+TYPE 
+	DeviceName* = ARRAY DeviceNameLength OF CHAR;
+
+	(* Pointer to a device *)
+	Device* = POINTER TO DeviceDesc;  
+	
+	(* A generic driver Plugin that every serial device must implement. All calls are non blocking.*)
+	DeviceDesc* = RECORD 
+		(* Send "len" number of bytes from "buf" starting at offset "ofs". After the call, "len" conatins the number of
+		bytes that were sent. This call is non blocking *)
+		Write*: PROCEDURE ( dev: Device;  CONST buf: ARRAY OF SYSTEM.BYTE; ofs: SIZE;  VAR len: SIZE );  
+		(* Read "len" bytes into "buf" at offset "ofs". 
+			After the call, "len" contains the number of bytes that have actually been read. 
+			This call is non blocking *)
+		Read*: PROCEDURE ( dev: Device;  VAR buf: ARRAY OF SYSTEM.BYTE;  ofs: SIZE;  VAR len: SIZE );  
+		(* Returns the number of bytes available in the input buffer *)
+		Available*: PROCEDURE ( dev: Device ): SIZE;  
+		(* The number of free bytes available in the send buffer *)
+		Free*: PROCEDURE ( dev: Device ): SIZE;  
+		(* Execute a driver specific command identified by "cmd". "param" is the parameter of the command *)
+		Command*: PROCEDURE ( dev: Device;  cmd, param: INTEGER;  VAR res: INTEGER );  
+		(* Flush all bytes in the send buffer *)
+		Flush*: PROCEDURE ( dev: Device );  
+		(* Get the textual version of the last occured error *)
+		GetErrorText*: PROCEDURE ( dev: Device;  VAR err: ARRAY OF CHAR );  
+		(* Initialise and start this driver *)
+		Open*: PROCEDURE ( dev: Device );  
+		(* Shutdown and disable this driver *)
+		Close*: PROCEDURE ( dev: Device );  
+		(* Result of last operation *)
+		res*: INTEGER;  
+		(* Name of this device. This is used for identification by an application *)
+		name*: DeviceName;  
+		(* Pointer to the next registered driver. This field is not exported, as it is only used by the Registry *)
+		next: Device
+	END;  
+
+VAR 
+	(* A linked list of all devices *)
+	devices: Device; 
+	
+	(* The NULL device *)
+	null: Device;
+	
+	(* Add a device in the device pool with name "name" and device id "id". The id can be used 
+	    internally for the device *)
+	PROCEDURE Install*( device: Device;  CONST name: ARRAY OF CHAR );  
+	BEGIN 
+		IF device # NIL THEN		
+			COPY(name, device.name);		
+			device.next := devices;
+			devices := device
+		END
+	END Install;  
+
+(* Get the device with name "name". Returns NIL if the device could not be found *)
+	PROCEDURE GetDevice*( CONST name: ARRAY OF CHAR ): Device;  
+	VAR device: Device;  
+	BEGIN 
+		device := devices;  
+		WHILE (device # NIL ) & (device.name # name) DO			
+			device := device.next
+		END;		
+		RETURN device
+	END GetDevice;  
+
+	PROCEDURE DumpDevices*;
+	VAR
+		device: Device;
+	BEGIN
+		UartMin.StrLn("Device List:");
+		device := devices;
+		WHILE device # NIL DO
+			UartMin.StrLn(device.name);
+			device := device.next
+		END;
+		UartMin.Ln
+	END DumpDevices;
+
+	(* Dummy procedures for initialisation *)
+	PROCEDURE NullAvailable( dev: Device ): SIZE;  
+	BEGIN 
+		RETURN 0
+	END NullAvailable;  
+
+	PROCEDURE NullFree( dev: Device ): SIZE;   (* fof: otherwise Log blocks *)
+	BEGIN 
+		RETURN MAX(SIZE)
+	END NullFree;  
+
+	PROCEDURE NullWrite( dev: Device;  CONST buf: ARRAY OF SYSTEM.BYTE;  ofs: SIZE;  VAR len: SIZE );  
+	BEGIN 
+	(* len := 0;  *)  (* fof: Write blocks for NULL device *)
+	END NullWrite;  
+
+	PROCEDURE NullRead( dev: Device;  VAR buf: ARRAY OF SYSTEM.BYTE;  ofs: SIZE; VAR len: SIZE );  
+	BEGIN 
+		len := 0
+	END NullRead;  
+
+	PROCEDURE NullCommand( dev: Device;  cmd, param: INTEGER;  VAR res: INTEGER );  
+	BEGIN 
+		res := 0;  
+	END NullCommand;  
+
+	PROCEDURE NullProc( dev: Device );  
+	BEGIN 
+	END NullProc;  
+
+	PROCEDURE NullGetErrorText( dev: Device;  VAR err: ARRAY OF CHAR );  
+	BEGIN 
+		err := "";  
+	END NullGetErrorText;  
+
+	(* Initialise an already allocated device with dummy procedures and initial values for all devices *)
+	PROCEDURE InitDevice*( dev: Device );  
+	BEGIN 
+		IF dev # NIL THEN 
+			dev.next := NIL;  dev.name[0] := 0X;  dev.res := 0;
+
+			dev.Write := NullWrite;
+			dev.Read := NullRead;  
+			dev.Available := NullAvailable;  
+			dev.Free := NullFree;  
+			dev.Command := NullCommand;  
+			dev.Flush := NullProc;  
+			dev.GetErrorText := NullGetErrorText;  
+			dev.Open := NullProc;  
+			dev.Close := NullProc;  
+		END;  
+	END InitDevice;  
+
+	(* Read a single character chr from the device dev. This call is blocking *)
+	PROCEDURE Read*( dev: Device;  VAR chr: CHAR );  
+	VAR 
+		len: SIZE;  
+	BEGIN 
+		REPEAT len := 1;  dev.Read( dev, chr, 0, len );  UNTIL len = 1;  
+	END Read;  
+	
+	(* Write a single character "chr" to the device "dev". This call is blocking *)
+	PROCEDURE Write*( dev: Device;  chr: CHAR );  
+	VAR 
+		len: SIZE;  
+	BEGIN 
+		REPEAT len := 1;  dev.Write( dev, chr, 0, len ) UNTIL len = 1;  
+	END Write;  
+
+	(* Routines to write and read all standard Oberon types. A read an write pair for all types is provided.
+		Note that all calls are blocking *)
+	PROCEDURE ReadBool*( dev: Device;  VAR bool: BOOLEAN );  
+	VAR 
+		ch: CHAR;  
+	BEGIN 
+		Read( dev, ch );  bool := ch # 0X
+	END ReadBool;  
+
+	PROCEDURE WriteBool*( dev: Device;  x: BOOLEAN );  
+	VAR 
+		c: CHAR;  
+	BEGIN 
+		IF x THEN 
+			c := 1X;  
+		ELSE 
+			c := 0X;  
+		END;  
+		Write( dev, c )
+	END WriteBool;  
+	
+	(* Read len bytes from the device dev and store them in buf starting at location offset. This call is blocking *)
+	PROCEDURE ReadBytes( dev: Device;  VAR buf: ARRAY OF SYSTEM.BYTE; offset, len: SIZE );  
+	VAR 
+		receive: SIZE;  
+	BEGIN 
+		len := offset + len;  
+		WHILE offset < len DO 
+			receive := len - offset;  dev.Read( dev, buf, offset, receive );  
+			offset := offset + receive;  
+		END;  
+	END ReadBytes;  
+
+	(* Write len bytes from the device dev and store them in buf starting at location offset. This call is blocking *)
+	PROCEDURE WriteBytes*( dev: Device;  CONST buf: ARRAY OF SYSTEM.BYTE; offset, len: SIZE );  
+	VAR 
+		toSend: SIZE;  
+	BEGIN 
+		len := offset + len;  
+		WHILE offset < len DO 
+			toSend := len - offset;  dev.Write( dev, buf, offset, toSend );  
+			offset := offset + toSend;  
+		END;  
+	END WriteBytes;  
+
+	PROCEDURE ReadChars*( dev: Device;  VAR buf: ARRAY OF CHAR;  offset, len: SIZE );  
+	BEGIN 
+		ReadBytes( dev, buf, offset, len );  
+	END ReadChars;  
+
+	PROCEDURE WriteChars*( dev: Device;  CONST buf: ARRAY OF CHAR;  offset, len: SIZE );  
+	BEGIN 
+		WriteBytes( dev, buf, offset, len );  
+	END WriteChars;  
+
+	PROCEDURE ReadInt*( dev: Device;  VAR int: SIZE );  
+	BEGIN 
+		ReadBytes( dev, int, 0, 4 );  
+	END ReadInt;  
+
+	PROCEDURE WriteInt*( dev: Device;  int: SIZE );  
+	BEGIN 
+		WriteBytes( dev, int, 0, 4 );  
+	END WriteInt;  
+
+	PROCEDURE ReadReal*( dev: Device;  VAR real: FLOAT32 );  
+	BEGIN 
+		ReadBytes( dev, real, 0, 4 );  
+	END ReadReal;  
+
+	PROCEDURE WriteReal*( dev: Device;  real: FLOAT32 );  
+	BEGIN 
+		WriteBytes( dev, real, 0, 4 );  
+	END WriteReal;  
+
+	PROCEDURE ReadSet*( dev: Device;  VAR set: SET );  
+	BEGIN 
+		ReadBytes( dev, set, 0, 4 );  
+	END ReadSet;  
+
+	PROCEDURE WriteSet*( dev: Device;  set: SET );  
+	BEGIN 
+		WriteBytes( dev, set, 0, 4 );  
+	END WriteSet;  
+
+	PROCEDURE ReadStr*( dev: Device;  VAR buf: ARRAY OF CHAR );  
+	VAR i: SIZE;  ch: CHAR;  
+	BEGIN 
+		i := 0;  
+		REPEAT Read( dev, ch );  buf[i] := ch;  INC( i ) UNTIL ((ch = 0X) OR (i >= LEN( buf )));  
+		buf[i - 1] := 0X;  
+	END ReadStr;  
+
+	PROCEDURE WriteStr*( dev: Device;  CONST buf: ARRAY OF CHAR );  
+	VAR len: SIZE;  
+	BEGIN 
+		len := 0;  
+		
+		WHILE (len < LEN( buf ) - 1) & (buf[len] # 0X) DO INC( len );  
+		END;  
+
+		INC( len );  WriteChars( dev, buf, 0, len );  
+	END WriteStr;  
+	
+	(* Just here to make the interface consistent *)
+	PROCEDURE Available*( dev: Device ): SIZE;  
+	BEGIN 
+		RETURN dev.Available( dev )
+	END Available;  
+
+	(* Just here to make the interface consistent *)
+	PROCEDURE Free*( dev: Device ): SIZE;  
+	BEGIN 
+		RETURN dev.Free( dev )
+	END Free;  
+
+	(* Just here to make the interface consistent *)
+	PROCEDURE Flush*( dev: Device );  
+	BEGIN 
+		dev.Flush( dev )
+	END Flush;  
+
+	(* Just here to make the interface consistent *)
+	PROCEDURE Open*( dev: Device );  
+	BEGIN 
+		dev.Open( dev )
+	END Open;  
+
+	(* Just here to make the interface consistent *)
+	PROCEDURE Close*( dev: Device );  
+	BEGIN 
+		dev.Close( dev )
+	END Close;  
+
+	(* Just here to make the interface consistent *)
+	PROCEDURE Command*( dev: Device;  cmd, param: INTEGER;  VAR res: INTEGER );  
+	BEGIN 
+		dev.Command( dev, cmd, param, res );  
+	END Command;  
+
+BEGIN
+	devices := NIL;
+	NEW( null );	
+	InitDevice( null );  Install( null, "NULL" );  
+END Device.

@@ -1,5 +1,3 @@
 Compiler.Compile -p=Minos RPI.SPI.Mod MAX7219.Mod ~
-V24.Map 5 /dev/ttyUSB0 ~
-Zeus.Connect 5 ~
+Zeus.Connect 3 ~
 Zeus.Cmd Minos.ShowModules ~
-

@@ -27,7 +27,9 @@ TYPE
 
 	(** Implements a recursive lock *)
 	RecursiveLock* = OBJECT
-	VAR
+		VAR 
+			owner : ANY; 
+			counter : INTEGER;
 
 		(** initializer, will be called when object is instantiated *)
 		PROCEDURE &New*;
@@ -38,11 +40,24 @@ TYPE
 		PROCEDURE Acquire*;
 		VAR me : ANY;
 		BEGIN {EXCLUSIVE}
+			me := Objects.ActiveObject();
+
+			IF (owner # NIL) & (owner # me) THEN
+				AWAIT counter = 0;
+			END;
+
+			owner := me;
+			counter := counter + 1;
 		END Acquire;
 
 		(** release the read/write lock on the object *)
 		PROCEDURE Release*;
 		BEGIN {EXCLUSIVE}
+			counter := counter - 1;
+
+			IF counter = 0 THEN
+				owner := NIL;
+			END;
 		END Release;
 
 	END RecursiveLock;

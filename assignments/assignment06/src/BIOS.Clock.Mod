@@ -132,7 +132,7 @@ END IntToBCD;
 (** Return the current time and date in Oberon format. *)
 
 PROCEDURE Get*(VAR time, date: SIGNED32);
-VAR clock: Clock;
+(* VAR clock: Clock; *)
 BEGIN
 	clock.Get(time, date)
 END Get;

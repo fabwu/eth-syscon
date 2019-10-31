@@ -153,7 +153,7 @@ BEGIN
 		config[7] := CHR(ORD("0") + i); config[8] := 0X;
 		OpenVolume(config)
 	END;
-	Machine.Shutdown(TRUE);
+	(* Machine.Shutdown(TRUE); *)
 END OpenVolumes;
 
 BEGIN

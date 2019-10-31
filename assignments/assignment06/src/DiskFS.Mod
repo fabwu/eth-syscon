@@ -1465,7 +1465,7 @@ END NewSub;
 PROCEDURE NewFS*(context : Files.Parameters);
 VAR fs: FileSystem; fh: FileHeader; skipIndexMapWriteback: BOOLEAN; options: ARRAY 8 OF CHAR;
 BEGIN
-	LOOP END;
+	(* LOOP END; *)
 	(* Get options *)
 	context.arg.SkipWhitespace;
 	REPEAT UNTIL ~context.arg.GetString(options) OR (options = '|');

@@ -1,0 +1,26 @@
+MODULE TestStack;
+	IMPORT Commands, Stack;
+CONST 
+TYPE 
+	StackType = Stack.Stack; 
+
+	State = ENUM Idle = 0, Running = 1, Stopped = 2 END; 
+
+	Runner = OBJECT {EXCLUSIVE} 
+	VAR 
+		stack: StackType; 
+		state: State; 
+		operations: SIZE; 
+
+		PROCEDURE ^  & Init(s: StackType; ops: SIZE); 
+		PROCEDURE ^ Await(code: State); 
+		PROCEDURE ^ Set(code: State); 
+		PROCEDURE ^ Action; 
+	BEGIN{ACTIVE} 
+	END Runner; 
+
+	PROCEDURE ^ Assert(cond: BOOLEAN; CONST msg: ARRAY OF CHAR); 
+	PROCEDURE ^ Check(s: StackType; nodes: SIZE); 
+	PROCEDURE ^ Test*(context: Commands.Context); 
+BEGIN
+END TestStack.

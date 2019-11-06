@@ -1,0 +1,55 @@
+MODULE Stack;
+TYPE 
+	Node* = OBJECT 
+	VAR 
+		value-: SIZE; 
+		next: Node; 
+
+		PROCEDURE ^  & Init*(value: SIZE); 
+	END Node; 
+
+	Stack* = OBJECT {ABSTRACT} 
+
+		PROCEDURE ^ {ABSTRACT} Push*(node: Node); 
+		PROCEDURE ^ {ABSTRACT} Pop*(): Node; 
+	END Stack; 
+
+	UnprotectedStack* = OBJECT (Stack)
+	VAR 
+		top: Node; 
+
+		PROCEDURE ^ Push*(node: Node); 
+		PROCEDURE ^ Pop*(): Node; 
+	END UnprotectedStack; 
+
+	BlockingStack* = OBJECT {EXCLUSIVE} (Stack)
+	VAR 
+		top: Node; 
+
+		PROCEDURE ^ Push*(node: Node); 
+		PROCEDURE ^ Pop*(): Node; 
+	END BlockingStack; 
+
+	LockfreeStack* = OBJECT (Stack)
+	VAR 
+		top: Node; 
+
+		PROCEDURE ^ Push*(new: Node); 
+		PROCEDURE ^ Pop*(): Node; 
+	END LockfreeStack; 
+
+	PlaceholderStack* = OBJECT (Stack)
+	TYPE 
+		Placeholder = OBJECT 
+		VAR 
+			next: Placeholder; 
+			node: Node; 
+		END Placeholder; 
+	VAR 
+		top: Placeholder; 
+
+		PROCEDURE ^ Push*(new: Node); 
+		PROCEDURE ^ Pop*(): Node; 
+	END PlaceholderStack; 
+BEGIN
+END Stack.

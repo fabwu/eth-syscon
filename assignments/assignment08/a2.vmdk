@@ -1,0 +1,27 @@
+# Disk DescriptorFile
+version=1
+CID=5661acc6
+parentCID=ffffffff
+isNativeSnapshot="no"
+createType="monolithicFlat"
+
+# Extent description
+RW 4032 FLAT "A2HDD.img" 0
+
+# The Disk Data Base 
+#DDB
+
+ddb.adapterType = "ide"
+ddb.encoding = "windows-1252"
+ddb.geometry.biosCylinders = "8"
+ddb.geometry.biosHeads = "8"
+ddb.geometry.biosSectors = "63"
+ddb.geometry.cylinders = "406"
+ddb.geometry.heads = "16"
+ddb.geometry.sectors = "63"
+ddb.longContentID = "57665f1765ababe0dc6141485661ffff"
+ddb.uuid.image = "a028a4fa-0efc-4865-8864-0a36bd99ffff"
+ddb.uuid.modification = "799e0783-2b9d-4368-a26e-f0994409df5f"
+ddb.uuid.parent = "00000000-0000-0000-0000-000000000000"
+ddb.uuid.parentmodification = "8c8a9447-34f1-4f6b-8940-777b6c46118d"
+ddb.virtualHWVersion = "6"

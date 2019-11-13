@@ -3,8 +3,8 @@ plugin_ctrl: unmapped=1, biosdev=1, speaker=1, extfpuirq=1, parallel=1, serial=1
 config_interface: win32config
 display_library: win32
 memory: host=512, guest=512
-romimage: file="C:\Program Files (x86)\Bochs-2.6.8/BIOS-bochs-latest"
-vgaromimage: file="C:\Program Files (x86)\Bochs-2.6.8/VGABIOS-lgpl-latest"
+romimage: file="C:\Bochs-2.6.9/BIOS-bochs-latest"
+vgaromimage: file="C:\Bochs-2.6.9/VGABIOS-lgpl-latest"
 boot: disk
 floppy_bootsig_check: disabled=0
 # no floppya

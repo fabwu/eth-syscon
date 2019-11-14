@@ -8,3 +8,6 @@
 *.GofI
 *.SymI
 Build/
+*.asc
+*.bin
+*.blif

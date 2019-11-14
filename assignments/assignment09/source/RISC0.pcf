@@ -1,0 +1,17 @@
+# RISC0Top.pcf PDR 7.11.19 / 11.11.19
+set_io OSCIN 21     # (GBIN6) 100MHz osc
+set_io rstBtn 62    # FLASH HLD, PIC RA4, ext. 10K pullup
+set_io LED 37       # J5-3, network enable & LED
+
+# 5V SPI interface (J2)
+set_io MISO 93      # J2-8
+set_io MOSI 106     # J2-2 - also KBD-1 (DAT)
+set_io SCLK 98      # J2-5 - also MOU-1 (DAT)
+set_io SS[0] 105    # J2-3 - also KBD-5 (CLK)
+set_io SS[1] 97     # J2-6 - also MOU-5 (CLK)
+
+# GPIO (J5)
+set_io gpio[0] 45   # J2-8
+set_io gpio[1] 43   # J2-6
+set_io gpio[2] 41   # J2-4
+set_io gpio[3] 38   # J2-2

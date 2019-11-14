@@ -1,0 +1,77 @@
+FPGA Tools for the SystemBau Course
+===================================
+
+PFF/PDR 11.11.19
+
+Steps 0, 1, 2, 3 http://www.clifford.at/icestorm/
+
+0. Some prerequisites, e.g.
+
+0a. Debian-type Linux (Ubuntu etc.)
+sudo apt-get install build-essential clang bison flex libreadline-dev \
+                     gawk tcl-dev libffi-dev git mercurial graphviz   \
+                     xdot pkg-config python python3 libftdi-dev \
+                     qt5-default python3-dev libboost-all-dev cmake
+
+0b. RedHat-type Linux (Fedora etc.)
+sudo dnf install make automake gcc gcc-c++ kernel-devel clang bison \
+                 flex readline-devel gawk tcl-devel libffi-devel git mercurial \
+                 graphviz python-xdot pkgconfig python python3 libftdi-devel \
+                 qt5-devel python3-devel boost-devel boost-python3-devel
+
+1. IceStorm tools (iCE40 FPGA bitfile handling)
+
+[me@box ~]$ git clone https://github.com/cliffordwolf/icestorm.git icestorm
+[me@box ~]$ cd icestorm
+[me@box icestorm]$ make -j$(nproc)
+[me@box icestorm]$ sudo make install
+[me@box icestorm]$ cd
+[me@box ~]$
+
+2a. Arachne-PNR (iCE40 place-and-route, simpler than NextPNR)
+
+[me@box ~]$ git clone https://github.com/cseed/arachne-pnr.git arachne-pnr
+[me@box ~]$ cd arachne-pnr
+[me@box arachne-pnr]$ make -j$(nproc)
+[me@box arachne-pnr]$ sudo make install
+[me@box arachne-pnr]$ cd
+[me@box ~]$
+
+2b. NextPNR (place-and-route, replacement for Arachne-PNR)
+
+[me@box ~]$ git clone https://github.com/YosysHQ/nextpnr nextpnr
+[me@box ~]$ cd nextpnr
+[me@box nextpnr]$ cmake -DARCH=ice40 -DCMAKE_INSTALL_PREFIX=/usr/local .
+[me@box nextpnr]$ make -j$(nproc)
+[me@box nextpnr]$ sudo make install
+[me@box nextpnr]$ cd
+[me@box ~]$
+
+3. Yosys (Verilog to netlist)
+
+[me@box ~]$ git clone https://github.com/cliffordwolf/yosys.git yosys
+[me@box ~]$ cd yosys
+[me@box yosys]$ make -j$(nproc)
+[me@box yosys]$ sudo make install
+[me@box yosys]$ cd
+[me@box ~]$
+
+4. dfu-util (Downloadable Firmware Upgrade protocol over USB)
+http://dfu-util.sourceforge.net/
+
+[me@box ~]$ git clone git://git.code.sf.net/p/dfu-util/dfu-util
+[me@box ~]$ cd dfu-util
+[me@box dfu-util]$ ./autogen.sh
+[me@box dfu-util]$ ./configure  # on most systems
+[me@box dfu-util]$ make
+[me@box dfu-util]$ sudo make install
+[me@box dfu-util]$ cd
+[me@box ~]$
+
+5. Test - these should all run to completion:
+
+[me@box ...repository/source]$ yosys -DTEST -p 'synth_ice40 -blif risc0.blif' RISC0.v
+[me@box ...repository/source]$ arachne-pnr -d 8k -P tq144:4k -o risc0.asc -p RISC0.pcf risc0.blif
+[me@box ...repository/source]$ icepack risc0.asc risc0.bin
+[me@box ...repository/source]$ icetime -d hx8k -P tq144:4k -p RISC0.pcf -t risc0.asc
+...ending with e.g. Total path delay: 37.65 ns (26.56 MHz)

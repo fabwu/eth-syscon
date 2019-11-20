@@ -1,0 +1,3 @@
+# Blinky.pcf  PDR 14.11.19
+set_io OSCIN  21  # (GBIN6) 100MHz osc  bel 0 16 1
+set_io LED 37  # bel 4 0 0

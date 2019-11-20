@@ -1,0 +1,313 @@
+!252-0286-00L
+"The belief...
+>...that complex systems require armies of designers and programmers
+>is wrong.
+>
+>"A system that is not understood in its entirety, or at 
+>least to a significant degree of detail by a single individual,
+>should probably not be built."
+>
+>
+- Niklaus Wirth (Feb. 1995), "A Plea for Lean Software", IEEE Computer
+
+ETH Vorlesung Systembau / Lecture System Construction
+>Case Study: Custom-designed Single-Processor System
+>Paul Reed (paulreed@paddedcell.com)
+>
+>Overview
+- RISC single-processor personal computer designed from scratch
+- Hardware on field-programmable gate array (FPGA)
+- (this lecture) Motivation and goals; FPGAs; RISC CPU
+- (next lecture) Graphical workstation OS and compiler (Project Oberon)
+
+Motivation
+- "Project Oberon" (1992) by N. Wirth & J. Gutknecht, at ETH Zurich
+- available commercial systems are far from perfect
+- building a complete system from scratch is achievable and beneficial
+- not just a "toy" system: complete and self-hosting
+- personally: need good and reliable tools for commercial customers
+- recently, trust: security - knowing what's inside (IoT, medical)
+
+Case Study Goals
+- weigh pros and cons of designing from scratch
+- introducing FPGAs to design custom hardware
+- examples and benefits of software/hardware co-design
+- competence in building complete system from the ground up
+- understanding of "how it really works" from hardware to application
+- courage to apply "lean systems" approach wherever appropriate
+
+Why Build from Scratch?
+- clear design: easy to see where to extend or fix
+- flexible and based solely on problem domain and experience
+- reduce complexity: no "baggage", less of what you don't like
+- increase control, reduce the number of dependencies
+- more choices of implementation, more of what the customer asked for
+- eliminate surprises: deliver on time and on budget
+- source of competitive advantage
+- opportunity to change the world  :)
+
+Why not Build from Scratch?
+- duplication of effort: "re-inventing the wheel"
+- more fundamental knowledge required
+- may be more actual work (the first time)
+- risky: tendency to underestimate
+- restricted component choices
+- not for the short-term
+- no credit for only *trying* to change the world  :(
+
+Configurable Hardware
+- evolution of reprogrammable decoding "glue" logic (PALs/GALs, CPLDs)
+- FPGA loads configuration (bitstream), not fixed like VLSI / ASIC
+- applications from telecommunications to automotive and industrial
+- even banking (high-frequency trading) and cryptocurrency mining
+- flexible, but not the best for performance or for power
+- now big (and fast) enough for entire system-on-chip
+- Lattice iCE40HX4K-tq144, 7680 LUTs: US$6
+- Xilinx Ultrascale XCVU440-3FLGA2892E, 2.5m LUTs: US$77000
+
+The Hardware / Software Boundary
+- traditionally, only firmware gave hardware its "personality"
+- strong interfaces and standards, separation of specialisations
+- high-performance hardware from competitive commercial marketplace
+- innovation in the hands of just a few big companies
+- (except more customisation in embedded)
+- now, configurable hardware democratises
+- new discipline of hardware / software co-design  :)
+- but now this knowledge essential for competitive advantage  :(
+
+Types of Resources Inside FPGAs
+- look-up tables implement a logic function (truth table)
+- D-type flip-flops remember a binary value from clock to clock
+- routing resources connect the various elements
+- (global clocks and other specialised routing)
+- block RAM for holding organised data
+- SPI, I2C or memory interface "hard-cores"; JTAG control interface
+- DSP elements: multiply or multiply-and-accumulate
+- general double-data-rate and SERDES high-performance "edge" functions
+- basic logic organised into "blocks", and e.g. higher-level "quadrants"
+
+Hardware Description Languages
+- used to describe digital circuits textually
+- more precise, scalable and formal than schematic capture
+- same source code used for both simulation and synthesis
+- commercial examples: (System)Verilog, VHDL
+- developed at ETH: Lola, Active Cells
+- VERY different from software programming languages:
+- everything parallel, different notion of time, resource limitations
+- still not a perfect description (e.g. timing, metastability)
+
+FPGA Development Toolchains
+- synthesis: create logical "netlist" of components and connections
+- technology mapping: against a physical chip family
+- placement: onto a particular target chip
+- routing: of connections between the placed cells
+- bitstream generation: encoding used to configure the chip
+- timing analysis: are all delays within requirements? (!)
+- simulation: at synthesis level or post-P&R
+- power and electrical models (e.g. IBIS)
+- integrated HDL-driven environment (usually proprietary $$$)
+- pre-fabricated intellectual property (IP) blocks available
+- (possibly) integrated software/hardware co-design
+
+How are Logic Functions Implemented?
+- (often several choices for familiar functions)
+- multiplexers (lots of these)
+- shift-registers and barrel-shifters
+- ripple-carry vs carry-save vs carry-lookahead adders
+- ripple counter vs synchronous counter (exercise)
+- composition, e.g. multiplier, divider, ALU
+- simple external interfaces: RS232, SPI
+- complex external interfaces: memory controllers, video processing
+
+Our FPGA Board
+- [handout FPGABoard.pdf: "System Construction FPGA Board"]
+- Lattice iCE40 low-power, low-cost FPGA with 7680 LUTs & 128Kb BRAM
+- 1MB external fast (10ns) asynchronous static RAM
+- SPI flash for non-volatile FPGA bitstream and data storage
+- Microchip PIC16LF1459 8-bit microcontroller for system management
+- micro-USB connector providing 5V power and communication interface
+- 2.5V & 3.3V general-purpose I/O headers; VGA connector
+- 100MHz oscillator and 3.3V/2.5V/1.2V regulators
+- entirely open-source tools in development and use
+
+Hardware Flashing-LED Test (Demo)
+- [handout Blinky-Verilog.pdf: "Blinky.v"]
+- fully-hardware-only solution as a simple example of Verilog
+- define module inputs and outputs, registers, and wires
+- single-bit signals and multi-bit busses/registers
+- combinational: "assign" (wiring up, logical functions)
+- register-transfer: "always @()" (state changes)
+- constraints/preferences ("Blinky.pcf") for pin assignment
+- compile, p-n-r, check timing (!), note resources used
+- low-level, pedantic: e.g. change to heartbeat (exercise)
+- uses synchronous counter, could use ripple counter (exercise)
+
+Observe Resources Used and Check Timing (exercises)
+- arachne-pnr displays "After packing" report
+- (a) total logic cells used (LCs)
+- (b) add D-type flip-flops (DFF) only (registers)
+- to DFFs where carry logic is also used (CARRY, DFF)
+- icetime command estimates longest propagation delay
+- gives maximum frequency of whole design
+- but the actual speed is part of the design, NOT set by tools
+- (break)
+
+Introduction to Niklaus Wirth's RISC Processor
+- originally a 32-bit virtual machine target for "Compiler Construction"
+- follows successful reduced-instruction-set design philosophy
+- registers instead of a stack machine
+- Harvard or Von Neumann memory architecture
+- hardware floating-point option
+- defined in Verilog and developed originally on a Xilinx Spartan 3 FPGA
+- Lattice iCE40, 25MHz RISC0 microcontroller, timer, SPI: 3K LUT, 850 regs
+
+RISC Architecture Overview
+- [handout RISC-Architecture.pdf: "The RISC Architecture"]
+- program counter (PC) and instruction register (IR)
+- instruction decode logic - "control unit"
+- 16 general-purpose 32-bit registers - "register file"
+- arithmetic and logic, barrel shifter; flags NZCV
+- memory interfaces: block RAM, synthetic ROM
+
+The RISC Instruction Set
+- 16 arithmetic and logic instructions (reg/reg and reg/immediate)
+- load and store register to/from data memory (word and byte)
+- conditional branch (-and-link), 8 conditions and their opposite
+>
+>That's all folks!  :)
+>
+>
+>
+>
+- example:  ADD R1 R0 42    ????_????_????_????_????_????_????_????
+- encoding of immediates
+
+RISC0 Implementation on a Lattice FPGA
+- [handout RISC0-Verilog.pdf: "module RISC0Top..."]
+- Harvard RISC0 CPU, 2K words data RAM, separate instruction memory
+- complete ALU, simple multiplier and divider
+- Verilog "top" module: outside-world interface
+- memory-mapped I/O port decoding
+- port examples: timer, LED, SPI, general-purpose I/O
+- e.g. IOBUFR tri-state I/O buffer, replicated with generate (exercise)
+- pin constraints file (PCF)
+- basic assurance test (BAT) program included in source (exercise)
+
+Software Flashing-LED Test
+- [handout Blinky-Oberon.pdf: "MODULE* Blinky"]
+- "MODULE*" signifies a standalone module e.g. for ROM
+- machine code output by compiler (Blinky.Mod.v)
+- (unused) initialisation of stack
+- variables based at low addresses
+- main loop - output to LED port at -60 (FFFFFFC4)
+- use ROR for frequency division
+- unused termination code
+
+RISC0 SPI Communication
+- modern, low-wire-count synchronous communications channel
+- shift register implemented in hardware, used for both in and out
+- control signals (e.g. chip-select) manipulated by software
+- poll status bit for operation complete (or interrupt)
+- input available at end of operation
+- RISC0 SPI simpler than, e.g. typical ARM SoC implementation
+
+SPI Communication Exercise
+- revise MAX7219 7-segment display output (32-bit hex)
+- develop from Blinky using test function first (assurance)
+- initialise, then map and set each digit
+- mapping "optional", i.e. can omit to debug
+- RISC0: need to use only INTEGERs, no BYTE or CHAR!
+- will use for debugging
+
+(end of lecture)
+
+Exercise 1: RISC0 on the FPGA Board
+
+Exercise 1a: Tools and Workflow, Blinky-Verilog
+- compile Blinky.v, then place-and-route
+- note resources used
+- check timing (!ok?!)
+- enable USB DFU interface on PC (e.g. udev rule) and connect board
+- generate bitstream, prepare file for DFU, and download - Blinky!  :)
+
+Exercise 1b: Turn Blinky into a Heartbeat
+- copy Blinky.v to Heartbeat.v
+- first, double the frequency of the blinking
+- then add two more bits to the counter
+- enable the blinking only if the top two bits are 1
+- compile, p-n-r
+- note resources used now
+- check timing (!)
+- generate bitfile and test
+- observe penalty (resources, timing) of adding fancy function
+
+Exercise 1c: Change Blinky.v to Use a Ripple Counter
+- each bit clocked by the bit before it
+- only bit 0 clocked by OSCIN
+- use generate (like in RISC0 top module) to save typing
+- compile, p-n-r
+- note resources used now
+- check timing (!)
+- generate bitfile and test
+
+Exercise 1d: Change Heartbeat to Use a Ripple Counter
+- change source, compile, p-n-r
+- note resources used now
+- check timing (!)
+- generate bitfile and test
+- notice the effect of adding the heartbeat function on resources & timing
+- compare this penalty with the synchronous counter implementation
+
+Exercise 2a: Build RISC0 with Basic assurance Test (BAT)
+- you already did this in advance, right?  :)
+- note resources used (!!)
+- check timing (!!!)
+- why is this OK?
+- (advanced) what does the BAT do?
+
+Exercise 2b: Build RISC0 with Oberon Blinky
+- bin/oberon compile Blinky.Mod
+- generates Blinky.Mod.v
+- add this to compilation command-line, remove TEST
+- compile: yosys -p 'synth_ice40 -blif risc0.blif' RISC0.v Blinky.Mod.v
+- note resources used
+- check timing (!)
+- build bitstream and test
+
+Exercise 2c: Communicate with SPI 7-segment Display
+- copy Blinky.Mod to a new MAX7219.Mod
+- Step 1: add the following a procedure SendCmd:
+- declare CONSTs spiData = -48; spiCtrl = -44;
+- SYSTEM.PUT(spiCtrl, 5) to select display in 16-bit mode
+- SYSTEM.PUT(spiData, cmd), then wait for spiCtrl ready bit 0 = 1
+- (hint: ... REPEAT UNTIL SYSTEM.BIT(spiCtrl, 0))
+- SYSTEM.PUT(spiCtrl, 0) to deselect
+- Step 2: blink display as well as LED using
+- SendCmd(0F00H + ROR(z, 12) MOD 2)
+- (update to LED(ROR(z, 12)) as well - why?)
+
+Exercise 2d: Write 32-bit Hex to 7-segment Display
+- Step 1: add procedure Init to send collowing commands:
+- 0F00H - test mode off; 0A08H - intensity
+- 0B07H - scan limit; 0C01H -not shutdown
+- and finally 0900H - no font code B
+- Step 2: add proc Map, map 0-15 to segs using integers
+- 0..3 -> m := 796D307EH; 4..7 -> m := 705F5B33H;
+- 8..11 -> m := 1F777B7FH; otherwise m := 474F3D4EH;
+- return ROR(m, digit MOD 4 * 8) MOD 100H as the segs
+- Step 3: loop to encode and set each digit
+
+Exercise 2f: Decode MAX7219 and Remove Unused Instructions from RISC0
+- what RISC0 processor instuctions are likely to remain unused?
+- test your assumptions: bin/oberon decode MAX7219.rsc
+- so, after testing application, remove unused hardware
+- this can be done by commenting out code in module RISC0 in RISC0.v
+- results in warnings, but the tools do the sensible thing
+- compare resources used
+
+
+[end of first lecture and exercises]
+
+Present.Show   
+Present.ShowPage 12
+Present.ShowPage 17

@@ -1,0 +1,114 @@
+ETH Vorlesung Systembau / Lecture System Construction
+252-0286-00L - Dr. Felix Friedrich, Paul Reed
+
+Case Study: Custom designed Single-Processor System - Paul Reed
+
+Web Resources
+=============
+
+Prof. Niklaus Wirth's Home Page
+  https://www.inf.ethz.ch/personal/wirth/
+
+A Plea For Lean Software
+  https://www.inf.ethz.ch/personal/wirth/Articles/LeanSoftware.pdf
+
+
+FPGA-related Work
+=================
+(https://inf.ethz.ch/personal/wirth/FPGA-relatedWork/)
+
+The Design of a RISC Architecture and its Implementation with an FPGA
+  https://inf.ethz.ch/personal/wirth/FPGA-relatedWork/RISC.pdf
+
+RISC Architecture
+  https://inf.ethz.ch/personal/wirth/FPGA-relatedWork/RISC-Arch.pdf
+
+
+Compiler Construction
+=====================
+
+Theory and Techniques of Compiler Construction
+  https://www.inf.ethz.ch/personal/wirth/CompilerConstruction/
+
+German Print Edition
+  N. Wirth. Grundlagen und Techniken des Compilerbaus. Oldenbourg Verlag 
+  (2011) ISBN 978-3-486-70951-3
+
+
+Project Oberon Book (2013 Edition)
+==================================
+
+The System: Chapters 1-9
+  https://www.inf.ethz.ch/personal/wirth/ProjectOberon/PO.System.pdf
+
+Applications: Chapters 10-15
+  https://www.inf.ethz.ch/personal/wirth/ProjectOberon/PO.Applications.pdf
+
+The Computer: Chapters 16-17
+  https://www.inf.ethz.ch/personal/wirth/ProjectOberon/PO.Computer.pdf
+
+Project Oberon resources website:
+  http://projectoberon.com
+
+
+IceStorm FPGA Tools
+===================
+
+http://www.clifford.at/icestorm/
+
+
+DFU-Util Downloader
+===================
+
+http://dfu-util.sourceforge.net/
+
+USB Device Class Specification for Device Firmware Upgrade
+https://www.usb.org/sites/default/files/DFU_1.1.pdf
+
+
+nRF24L01+ 2.4GHz Wireless Transceiver Module
+============================================
+
+Nordic Semiconductor (2008): nRF24L01+ Product Specification
+  https://www.nordicsemi.com/-/media/DocLib/Other/Product_Spec/nRF24L01PPSv10.pdf?la=en
+
+
+Repository Resources
+====================
+
+This file
+  SystemBauResources.txt
+
+RISC Lecture Notes and Exercise
+  handouts/SystemBau.RISC.pdf
+
+RISC Lecture Handouts
+  handouts/Blinky-Verilog.pdf - Verilog-only LED Test
+  handouts/RISC-Architecture.pdf - The RISC Architecture
+  handouts/RISC0-Verilog.pdf - The RISC0 Implementation
+  handouts/Blinky.Mod.pdf - Software LED Test
+
+RISC Exercise Handouts
+  handouts/FPGABoard.pdf - FPGA Board Overview
+  handouts/tools.txt - IceStorm Tools Setup for RISC0
+  handouts/55-microchip.rules - Linux USB udev rule for FPGA board
+
+RISC0 Verilog Source and constraint PCF file for FPGA board
+  source/RISC0.v
+  source/RISC0.pcf
+
+Oberon-07 RISC Compiler
+  OR/
+
+Oberon Lecture Notes and Exercise
+  handouts/SystemBau.Oberon.pdf
+
+Oberon Lecture Handouts
+  handouts/OberonCore.pdf
+  handouts/Stars.pdf
+
+RISC5 on the FPGA Board
+  source/RISC5.zip
+
+nRF24L01+ 2.4GHz Wireless Transceiver Module Datasheet
+  .../shared/documents/Nordic/nRF24L01P_Product_Specification_1_0.pdf

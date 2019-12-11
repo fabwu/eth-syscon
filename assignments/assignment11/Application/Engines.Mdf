@@ -1,0 +1,929 @@
+(**
+	AUTHOR: Alexey Morozov, HighDim GmbH, 2015
+		Stephan Koster, ETH zurich 2016
+	PURPOSE: ActiveCells engines definitions
+*)
+MODULE Engines;
+
+CONST
+	HdlCompilation* = FALSE; (** set to TRUE by the HDL building tool when the module is used for HDL compilation *)
+
+TYPE
+	
+	TRM* = CELL {Processor="TRM",Backend="TRM"} (clock, reset: PORT IN)
+	BEGIN
+	END TRM;
+
+	(**
+		Generic First Input First Output (FIFO) buffer with parameterizable data width and depth used for buffering data streams
+
+		*Parameters
+			DataWidth: FIFO data width
+			Length: length of the FIFO buffer (FIFO depth)
+			InitEnableInput: initial value of EnableInput flag, which enables/disables the input
+			InitEnableOutput: initial value of EnableOutput flag, which enables/disables the output
+			InitFullFlag: initial value of FullFlag flag; in case when (WrPos=RdPos)&(FullFlag=1), FIFO is FULL, similarlywhen (WrPos=RdPos)&(FullFlag=0) FIFO is EMPTY
+			InitWrPos: initial value of write position pointer
+			InitRdPos: initial value of read position pointer
+		*Ports:
+			input: FIFO input
+			output: FIFO output
+			cmd: FIFO command input
+
+		*Fifo commands
+
+			The least three bits of the command stream data determines the command type, the higher bits determine the command data
+
+			SetEnableInputOutput	, command type 0:
+				enable or disable FIFO input/output; command data consists of two bits, where the least significant bit controls the input, while the other controls the output
+			SetWrPos, command type 1: set write pointer position; command data contains the desired position value minus 1; the value cannot exceed Length-1
+			SetRdPos, command type 2: set read pointer position; command data contains the desired position value minus 1; the value cannot exceed Length-1
+			SetFullFlag, command type 3: set "FullFlag" bit; if this bit is set and write and read pointer positions are equal the FIFO will go to "Full" state; command data is represented by a single bit
+			SetLength, command type 4: set the length of the FIFO; command data contains the desired length minus one; the value cannot exceed Length-1
+
+			GetEnableInputOutput, command type 5:
+				get the state of enable/disable FIFO input/output flags; status data consists of two bits, where the least significant bit corresponds to the input, while the other corresponds to the output
+			GetWrPos, command type 6: get write pointer position; status data contains the pointer position value minus 1
+			GetRdPos, command type 7: get read pointer position; status data contains the pointer position value minus 1
+			GetFullFlag, command type 8: get "FullFlag" bit
+			GetLength, command type 9: get the length of the FIFO; status data contains the length minus one; the value cannot exceed Length-1
+
+		Remarks:
+			The current FIFO implementation has the latency of 2 clock cycles
+	*)
+	Fifo* = CELL{Engine,
+						DataWidth=32,
+						Length=8,
+						InitEnableInput=1,
+						InitEnableOutput=1,
+						InitFullFlag=0,
+						InitWrPos=0,
+						InitRdPos=0
+						}
+						(
+						input: PORT IN;
+						output: PORT OUT;
+						cmd: PORT IN;
+						status: PORT OUT;
+
+						(* system ports *)
+						clock: PORT IN;
+						reset: PORT IN
+						);
+	END Fifo;
+
+
+
+	(**
+		 Integer adder/subtractor with parameterizable data width
+
+		 *Parameters
+		 	InpDataWidth0: bit width of the first input stream
+		 	InpDataWidth1: bit width of the second input stream
+		 	OutDataWidth: bit width of the output stream
+		 	InitMode: initial mode of operation: 0 for addition, 1 for subtraction
+		 	Signed: for signed addition
+
+		 *Ports
+		 	input: ARRAY of stream inputs
+		 	output: multiplier result output
+		 	cfg: configuration input used to configure the component either as an adder (cfg << 0) or sibtractor (cfg << 1)
+	*)
+	AddSubInt* = CELL{Engine,
+							InpDataWidth0=32,
+							InpDataWidth1=32,
+							OutDataWidth=33,
+							InitMode=0,
+							Signed=1,
+							Latency=1
+							}
+							(
+							input: ARRAY 2 OF PORT IN;
+							output: PORT OUT;
+							cfg: PORT IN;
+
+							(* system ports *)
+							clock: PORT IN;
+							reset: PORT IN
+							);
+	END AddSubInt;
+
+	AddInt* = CELLNET{
+							InpDataWidth0=32,
+							InpDataWidth1=32,
+							OutDataWidth=33,
+							Signed=1,
+							Latency=1
+							}
+							(
+							input: ARRAY 2 OF PORT IN;
+							output: PORT OUT(*;
+
+							(* system ports *)
+							clock: PORT IN;
+							reset: PORT IN*)
+							)
+	VAR addSubInt: AddSubInt;
+	BEGIN
+		IF HdlCompilation THEN
+			NEW(addSubInt{InpDataWidth0=InpDataWidth0,InpDataWidth1=InpDataWidth1,OutDataWidth=OutDataWidth,InitMode=0,Signed=Signed});
+			DELEGATE(input[0],addSubInt.input[0]);
+			DELEGATE(input[1],addSubInt.input[1]);
+			DELEGATE(output,addSubInt.output);
+	
+			(*DELEGATE(clock,addSubInt.clock);
+			DELEGATE(reset,addSubInt.reset);*)
+		END;
+	END AddInt;
+
+	SubInt* = CELLNET{
+							InpDataWidth0=32,
+							InpDataWidth1=32,
+							OutDataWidth=33,
+							Signed=1,
+							Latency=1
+							}
+							(
+							input: ARRAY 2 OF PORT IN;
+							output: PORT OUT(*;
+
+							(* system ports *)
+							clock: PORT IN;
+							reset: PORT IN*)
+							)
+	VAR addSubInt: AddSubInt;
+	BEGIN
+		IF HdlCompilation THEN
+			NEW(addSubInt{InpDataWidth0=InpDataWidth0,InpDataWidth1=InpDataWidth1,OutDataWidth=OutDataWidth,InitMode=1,Signed=Signed});
+			DELEGATE(input[0],addSubInt.input[0]);
+			DELEGATE(input[1],addSubInt.input[1]);
+			DELEGATE(output,addSubInt.output);
+	
+			(*DELEGATE(clock,addSubInt.clock);
+			DELEGATE(reset,addSubInt.reset);*)
+		END;
+	END SubInt;
+
+	(**
+		 Integer multiplier with parameterizable data width
+
+		 *Parameters
+		 	InpDataWidth0: bit width of the first input stream
+		 	InpDataWidth1: bit width of the second input stream
+		 	OutDataWidth: bit width of the output stream
+
+		 *Ports
+		 	input: ARRAY of stream inputs
+		 	output: multiplier result output
+	*)
+	MulInt* = CELL{Engine,
+						InpDataWidth0=32,
+						InpDataWidth1=32,
+						OutDataWidth=64,
+						Signed = 1,
+						Latency = 7
+						}
+						(
+						input: ARRAY 2 OF PORT IN;
+						output: PORT OUT;
+
+						(* system ports *)
+						clock: PORT IN;
+						reset: PORT IN
+						);
+	END MulInt;
+
+	MulFlt* = CELL{Engine,ExpWidth=8,SignificandWidth=23,NumStages=5}
+							(
+							input: ARRAY 2 OF PORT IN;
+							output: PORT OUT;
+
+							(* system ports *)
+							clock: PORT IN;
+							reset: PORT IN
+							);
+	END MulFlt;
+
+	AddSubFlt* = CELL{Engine,InitMode=0,ExpWidth=8,SignificandWidth=23,NumInputStages=2,NumOutputStages=2,NumPorts=2}
+							(
+							input: ARRAY NumPorts OF PORT IN;
+							output: PORT OUT;
+
+							(* system ports *)
+							clock: PORT IN;
+							reset: PORT IN
+							);
+	END AddSubFlt;
+
+	MulFlt32* = CELL{Engine}
+							(
+							input: ARRAY 2 OF PORT IN;
+							output: PORT OUT;
+
+							(* system ports *)
+							clock: PORT IN;
+							reset: PORT IN
+							);
+	END MulFlt32;
+
+	AddFlt32* = CELL{Engine}
+							(
+							input: ARRAY 2 OF PORT IN;
+							output: PORT OUT;
+
+							(* system ports *)
+							clock: PORT IN;
+							reset: PORT IN
+							);
+	END AddFlt32;
+
+	SubFlt32* = CELL{Engine}
+							(
+							input: ARRAY 2 OF PORT IN;
+							output: PORT OUT;
+
+							(* system ports *)
+							clock: PORT IN;
+							reset: PORT IN
+							);
+	END SubFlt32;
+
+	StreamPipelineBuffer* = CELL{Engine,DataWidth=32,NumStages=1}
+							(
+							input: PORT IN;
+							output: PORT OUT;
+
+							(* system ports *)
+							clock: PORT IN;
+							reset: PORT IN
+							);
+	END StreamPipelineBuffer;
+
+	StreamDemux* = CELL{Engine,DataWidth=32,NumOutputs=8}
+								(
+								select: PORT IN;
+								input: PORT IN;
+								output: ARRAY NumOutputs OF PORT OUT
+								)
+	END StreamDemux;
+
+	StreamMux* = CELL{Engine,DataWidth=32,NumInputs=8}
+								(
+								select: PORT IN;
+								input: ARRAY NumInputs OF PORT IN;
+								output: PORT OUT
+								)
+	END StreamMux;
+
+	StreamDeserializer* = CELL{Engine,DataWidth=32,NumOutputs=8}
+								(
+								input: PORT IN;
+								output: ARRAY NumOutputs OF PORT OUT
+								)
+	END StreamDeserializer;
+
+	StreamSerializer* = CELL{Engine,DataWidth=32,NumInputs=8}
+								(
+								input: ARRAY NumInputs OF PORT IN;
+								output: PORT OUT;
+
+								(* system ports *)
+								clock: PORT IN;
+								reset: PORT IN
+								)
+	END StreamSerializer;
+
+	StreamMerger* = CELL{Engine, NumInputs=8,
+											(*! use ARRAY parameter when implemented in the compiler *)
+											InpDataWidth0=4,
+											InpDataWidth1=4,
+											InpDataWidth2=4,
+											InpDataWidth3=4,
+											InpDataWidth4=4,
+											InpDataWidth5=4,
+											InpDataWidth6=4,
+											InpDataWidth7=4
+											}
+								(
+								input: ARRAY NumInputs OF PORT IN;
+								output: PORT OUT;
+
+								(* system ports *)
+								clock: PORT IN;
+								reset: PORT IN
+								)
+	END StreamMerger;
+
+	StreamSplitter* = CELL{Engine, InpDataWidth=32, NumOutputs=8,
+									(*! use ARRAY parameter when implemented in the compiler *)
+									OutDataWidth0=4,
+									OutDataWidth1=4,
+									OutDataWidth2=4,
+									OutDataWidth3=4,
+									OutDataWidth4=4,
+									OutDataWidth5=4,
+									OutDataWidth6=4,
+									OutDataWidth7=4
+									}
+								(
+								input: PORT IN;
+								output: ARRAY NumOutputs OF PORT OUT;
+
+								(* system ports *)
+								clock: PORT IN;
+								reset: PORT IN
+								)
+	END StreamSplitter;
+
+	StreamSynchronizer* = CELLNET{NumInputs=8,
+											(*! use ARRAY parameter when implemented in the compiler *)
+											InpDataWidth0=4,
+											InpDataWidth1=4,
+											InpDataWidth2=4,
+											InpDataWidth3=4,
+											InpDataWidth4=4,
+											InpDataWidth5=4,
+											InpDataWidth6=4,
+											InpDataWidth7=4
+											}
+								(
+								input: ARRAY NumInputs OF PORT IN; (* non-synchronous inputs *)
+								output: ARRAY NumInputs OF PORT OUT(*; (* synchronized outputs *)
+
+								(* system ports *)
+								clock: PORT IN;
+								reset: PORT IN*)
+								)
+	VAR
+		merger: StreamMerger;
+		splitter: StreamSplitter;
+		i, n: SIGNED32;
+	BEGIN
+		IF HdlCompilation THEN	
+			(*!TODO: think how to avoid explicit input/output data width specification (infer it from the connected ports???) *)
+			NEW(merger{NumInputs=NumInputs,
+											InpDataWidth0=InpDataWidth0,
+											InpDataWidth1=InpDataWidth1,
+											InpDataWidth2=InpDataWidth2,
+											InpDataWidth3=InpDataWidth3,
+											InpDataWidth4=InpDataWidth4,
+											InpDataWidth5=InpDataWidth5,
+											InpDataWidth6=InpDataWidth6,
+											InpDataWidth7=InpDataWidth7
+							});
+
+			CASE NumInputs OF
+				|2: n := InpDataWidth0+InpDataWidth1;
+				|3: n := InpDataWidth0+InpDataWidth1+InpDataWidth2;
+				|4: n := InpDataWidth0+InpDataWidth1+InpDataWidth2+InpDataWidth3;
+				|5: n := InpDataWidth0+InpDataWidth1+InpDataWidth2+InpDataWidth3+InpDataWidth4;
+				|6: n := InpDataWidth0+InpDataWidth1+InpDataWidth2+InpDataWidth3+InpDataWidth4+InpDataWidth5;
+				|7: n := InpDataWidth0+InpDataWidth1+InpDataWidth2+InpDataWidth3+InpDataWidth4+InpDataWidth5+InpDataWidth6;
+				|8: n := InpDataWidth0+InpDataWidth1+InpDataWidth2+InpDataWidth3+InpDataWidth4+InpDataWidth5+InpDataWidth6+InpDataWidth7;
+			END;
+			NEW(splitter{InpDataWidth=n, NumOutputs=NumInputs,
+											OutDataWidth0=InpDataWidth0,
+											OutDataWidth1=InpDataWidth1,
+											OutDataWidth2=InpDataWidth2,
+											OutDataWidth3=InpDataWidth3,
+											OutDataWidth4=InpDataWidth4,
+											OutDataWidth5=InpDataWidth5,
+											OutDataWidth6=InpDataWidth6,
+											OutDataWidth7=InpDataWidth7
+											});
+			FOR i := 0 TO NumInputs-1 DO
+				DELEGATE(input[i],merger.input[i]);
+				DELEGATE(output[i],splitter.output[i]);
+			END;
+			CONNECT(merger.output,splitter.input);
+
+			(*DELEGATE(clock,splitter.clock);
+			DELEGATE(clock,splitter.clock);
+			DELEGATE(reset,splitter.reset);
+			DELEGATE(reset,splitter.reset);*)
+		END;
+	END StreamSynchronizer;
+
+	StreamSink* = CELL{Engine,DataWidth=32}(input: PORT IN);
+	END StreamSink;
+
+	SystemClock* = CELL{Engine, MulFactor=1, DivFactor=1, Phase=0}(input: PORT IN; output: PORT OUT);
+	END SystemClock;
+
+	SystemReset* = CELL{Engine, InputPolarity=0, OutputPolarity=0}(input: PORT IN; output: PORT OUT);
+	END SystemReset;
+
+	(**
+		UART transmitter
+	*)
+	UartTx* = CELL{Engine,ClkDivisorWidth=16,InitClkDivisor=868,CtsPortUnused=1,InitEnableRtsCts=0}
+						(
+						input: PORT IN;
+						cfg: PORT IN;
+
+						(* system ports *)
+						clock: PORT IN;
+						reset: PORT IN
+						);
+	END UartTx;
+
+	(**
+		UART receiver
+	*)
+	UartRx* = CELL{Engine,ClkDivisorWidth=16,InitClkDivisor=868,RtsPortUnused=1}
+						(
+						output: PORT OUT;
+						cfg: PORT IN;
+
+						(* system ports *)
+						clock: PORT IN;
+						reset: PORT IN
+						);
+	END UartRx;
+
+	XilinxAdc* = CELL{Engine,AuxInputs={}}(
+														cmd: PORT IN;
+														output: PORT OUT;
+														status: PORT OUT;
+
+														dclk: PORT IN;
+
+														(* system ports *)
+														clock: PORT IN;
+														reset: PORT IN
+														);
+	END XilinxAdc;
+
+	(**
+		A component for Pulse Width Modulated (PWM) signal generation
+
+		*Parameters
+			PeriodBitwidth: the bitwidth for representation of the period value, determines the maximal period in clock cycles
+			InitPeriod: initial value of the period in clock cycles
+			InitPulseWidth: initial value of the pulse width in clock cycles
+			InitPhase: initial phase (value of the time counter) in clock cycles
+			InitEnable: non-zero if pulse generation is enabled at the start-up
+
+		*Ports
+			cmd: command input
+
+		*Remarks
+			least significant bit is used to enable(high)/disable(low) the output;
+			bits 1 and 2 are used for specifying a command:
+				1 - set period, other PeriodBitwidth most significant bits specify the value to be set
+				2 - set pulse width, other PeriodBitwidth most significant bits specify the value to be set
+				3 - set phase, other PeriodBitwidth most significant bits specify the value to be set
+	*)
+	PwmGen1* = CELL{Engine,PeriodBitwidth=29,InitPeriod="0xFFFFFFF",InitPulseWidth="0x7FFFFFF",InitPhase="0x00",InitEnable=0}
+							(
+							cmd: PORT IN;
+
+							(* system ports *)
+							clock: PORT IN;
+							reset: PORT IN
+							);
+	END PwmGen1;
+	
+	
+	
+	(**
+		simple interface to the led digits on the spartan3 board
+	*)
+	
+	LEDDigits* = CELL{Engine}
+					(
+					input: PORT IN;
+
+					(* system ports *)
+					clock: PORT IN;
+					reset: PORT IN
+					);
+	END LEDDigits;
+	
+	(**
+		simple interface to I2S components
+	*)	
+	I2S* = CELL{Engine}
+					(
+					output: PORT OUT;
+
+					(* system ports *)
+					clock: PORT IN;
+					reset: PORT IN
+					);
+	END I2S;
+
+	(**
+		a component to limit sampling
+	*)	
+	Sampler* = CELL{Engine}
+					(
+					input: PORT IN;
+					output: PORT OUT;
+
+					(* system ports *)
+					clock: PORT IN;
+					reset: PORT IN
+					);
+	END Sampler;
+
+
+	(**
+		simple PWM cell
+	*)	
+	Pwm* = CELL{Engine}
+					(
+					input: PORT IN;
+
+					(* system ports *)
+					clock: PORT IN;
+					reset: PORT IN
+					);
+	END Pwm;
+
+	(**
+		a component to limit sampling
+	*)	
+	BiasCorrector* = CELL{Engine}
+					(
+					input: PORT IN;
+					output: PORT OUT;
+
+					(* system ports *)
+					clock: PORT IN;
+					reset: PORT IN
+					);
+	END BiasCorrector;	
+	(**
+		General Purpose Output (GPO) component
+
+		*Parameters
+			DataWidth: the bitwidth of the component output port
+			InitState: binary value representing the initial state of the GPO bits (little endian)
+
+		*Ports:
+			input: input port for setting up the current state of GPO bits
+	*)
+	Gpo* = CELL{Engine,DataWidth=8,InitState="0x0"}
+					(
+					input: PORT IN;
+
+					(* system ports *)
+					clock: PORT IN;
+					reset: PORT IN
+					);
+	END Gpo;
+	
+	(**
+		General Purpose Input (GPI) component
+
+		*Parameters
+			DataWidth: the bitwidth of the component output port
+
+		*Ports:
+			output: output port providing the current state of GPI bits
+	*)
+	Gpi* = CELL{Engine,DataWidth=8}
+					(
+					output: PORT OUT;
+
+					(* system ports *)
+					clock: PORT IN;
+					reset: PORT IN
+					);
+	END Gpi;
+
+	(**
+		I2C master controller
+	*)
+	I2cMaster* = CELL{Engine,ClkDivisorWidth=30,PacketSizeWidth=3,InitClkDivisor=12500,SclStretchSupported=0}
+						(
+						input: PORT IN;
+						output: PORT OUT;
+						cfg: PORT IN;
+						status: PORT OUT;
+
+						scl: PORT OUT;
+						sda: PORT OUT;
+
+						(* system ports *)
+						clock: PORT IN;
+						reset: PORT IN
+						);
+	END I2cMaster;
+
+	(**
+		Aptina MT9P031 CMOS image sensor
+	*)
+	AptinaMt9p031* = CELL{Engine}
+						(
+						cmd: PORT IN;
+						pix: PORT OUT;
+						camClk: PORT IN;
+						ctlScl: PORT IN;
+						ctlSda: PORT IN;
+
+						(* system ports *)
+						clock: PORT IN;
+						reset: PORT IN
+						);
+	END AptinaMt9p031;
+
+	(**
+		Timer component
+
+		*Ports
+			cmdInp: timer command input; 0 for resetting the timer counter, 1 for sampling the timer counter
+			output: timer counter output; data becomes available every time when sampling command has been issued
+
+		*Parameters
+			CounterWidth: width of the timer counter in bits
+			Inc: 1 for incrementing counter, 0 for decrementing counter
+	*)
+	Timer* = CELL{Engine,CounterWidth=32,Inc=1}
+						(
+						cmd: PORT IN;
+						output: PORT OUT;
+
+						(* system ports *)
+						clock: PORT IN;
+						reset: PORT IN
+						)
+	END Timer;
+
+	(**
+		Stream register
+
+		Register which is loaded and which outputs loaded data using AXI4 stream protocol
+
+		*Ports
+			input: input data port
+			output: output data port
+
+		*Parameters
+			DataWidth: register data width in number of bits
+			Preloaded: if non-zero the register will be preloaded with a given "PreloadValue" at the reset time
+			PreloadValue: data value to be used for preloading the register at the reset time
+			PersistentOutput: if non-zero the register will produce continuous output of the current value
+
+	*)
+	StreamRegister* = CELL{Engine,DataWidth=32,Preloaded=0,PreloadValue="0x0",PersistentOutput=0}
+									(
+									input: PORT IN;
+									output: PORT OUT;
+
+									(* system ports *)
+									clock: PORT IN;
+									reset: PORT IN
+									);
+	END StreamRegister;
+
+	LineBoundaryExtenderMirrorW* = CELL{Engine,InpDataWidth=32,MaxLineLen=1024,MaxLeftDelta=4,MaxRightDelta=4,InitLineLen=1024,InitLeftDelta=4,InitRightDelta=4}(
+																	input: PORT IN;
+																	output: PORT OUT;
+																	procInp: PORT IN;
+																	procOut: PORT OUT;
+
+																	(* system ports *)
+																	clock: PORT IN;
+																	reset: PORT IN
+																	);
+	END LineBoundaryExtenderMirrorW;
+
+	BsplInterpLut* = CELL{Engine,DataWidth=32,Length=128,VecLength=2,LutInitFile=""}
+								(
+								ind0: PORT IN;
+								output: PORT OUT;
+								lutInp: PORT IN;
+
+								(* system ports *)
+								clock: PORT IN;
+								reset: PORT IN
+								);
+	END BsplInterpLut;
+
+	BsplInterpLut1* = CELLNET{DataWidth=32,Length=128,VecLength=2,LutInitFile=""}
+											(
+											ind0: PORT IN;
+											output: ARRAY VecLength OF PORT OUT;
+											lutInp: PORT IN(*;
+											
+											(* system ports *)
+											clock: PORT IN;
+											reset: PORT IN*)
+											);
+	VAR
+		lut: BsplInterpLut;
+		splitter: StreamSplitter;
+		i: SIZE;
+	BEGIN
+		IF HdlCompilation THEN
+			NEW(lut{DataWidth=32,Length=128,VecLength=2,LutInitFile=LutInitFile});
+			DELEGATE(ind0,lut.ind0);
+			DELEGATE(lutInp,lut.lutInp);
+			NEW(splitter{InpDataWidth=DataWidth*VecLength,NumOutputs=VecLength,
+								OutDataWidth0=DataWidth,
+								OutDataWidth1=DataWidth,
+								OutDataWidth2=DataWidth,
+								OutDataWidth3=DataWidth,
+								OutDataWidth4=DataWidth,
+								OutDataWidth5=DataWidth,
+								OutDataWidth6=DataWidth,
+								OutDataWidth7=DataWidth
+								});
+			CONNECT(lut.output,splitter.input);
+			FOR i := 0 TO VecLength-1 DO
+				DELEGATE(output[i],splitter.output[i]);
+			END;
+			
+			(*DELEGATE(clock,lut.clock);
+			DELEGATE(clock,splitter.clock);
+			DELEGATE(reset,lut.reset);
+			DELEGATE(reset,splitter.reset);*)
+		END;
+	END BsplInterpLut1;
+
+	FixFlt* = CELL{Engine,ExpWidth=8,SignificandWidth=23,Latency=2}
+					(
+					input: PORT IN; 
+					output: PORT OUT;
+					
+					(* system ports *)
+					clock: PORT IN;
+					reset: PORT IN
+					);
+	END FixFlt;
+
+	FracFlt* = CELL{Engine,ExpWidth=8,SignificandWidth=23,Latency=2}
+					(
+					input: PORT IN; 
+					output: PORT OUT;
+					
+					(* system ports *)
+					clock: PORT IN;
+					reset: PORT IN
+					);
+	END FracFlt;
+
+	Clz* = CELL{Engine,InpDataWidth=32,OutDataWidth=-1}
+					(
+					input: PORT IN; 
+					output: PORT OUT;
+					
+					(* system ports *)
+					clock: PORT IN;
+					reset: PORT IN
+					);
+	END Clz;
+
+	FltToInt* = CELL{Engine,ExpWidth=8,SignificandWidth=23,OutDataWidth=32,Rounding=0,Latency=2}
+						(
+						input: PORT IN; 
+						output: PORT OUT;
+						
+						(* system ports *)
+						clock: PORT IN;
+						reset: PORT IN
+						);
+	END FltToInt;
+
+	BitShifterFxp* = CELL{Engine,InpDataWidth=32,OutDataWidth=32,InitShift=16,Signed=1,Rounding=1,Saturation=1,Latency=3}
+							(
+							input: PORT IN; 
+							output: PORT OUT; 
+							cfg: PORT IN;
+							
+							(* system ports *)
+							clock: PORT IN;
+							reset: PORT IN
+							);
+	END BitShifterFxp;
+
+	MulFxp* = CELL{Engine,InpDataWidth0=32,InpDataWidth1=32,OutDataWidth=32,InitShift=16,Signed=1,Rounding=1,Saturation=1,Latency=3}
+						(
+						input: ARRAY 2 OF PORT IN; 
+						output: PORT OUT; 
+						cfg: PORT IN;
+						
+						(* system ports *)
+						clock: PORT IN;
+						reset: PORT IN
+						);
+	END MulFxp;
+
+	WriteDma* = CELL{Engine,DataWidth=32,AddrWidth=32,MaxBurstLen=16}
+						(
+						cfgCmd, cfgData: PORT IN; 
+						status: PORT OUT; 
+						input: PORT IN; 
+						axiWrite: PORT OUT;
+						
+						(* system ports *)
+						clock: PORT IN;
+						reset: PORT IN
+						);
+	END WriteDma;
+
+	ReadDma* = CELL{Engine,DataWidth=32,AddrWidth=32,MaxBurstLen=16}
+						(
+						cfgCmd, cfgData: PORT IN; 
+						status: PORT OUT; 
+						output, event: PORT OUT; 
+						axiRead: PORT OUT;
+						
+						(* system ports *)
+						clock: PORT IN;
+						reset: PORT IN
+						);
+	END ReadDma;
+
+	StreamVideoOut* = CELL{Engine,RedDepth=8,GreenDepth=8,BlueDepth=8}
+								(
+								cfg: PORT IN;
+								videoInput: PORT IN;
+								beginOfFrame: PORT IN;
+
+								pixClk: PORT IN;
+								hSync: PORT OUT;
+								vSync: PORT OUT;
+								activeVideo: PORT OUT;
+								red: PORT OUT;
+								green: PORT OUT;
+								blue: PORT OUT;
+
+								pixReset: PORT OUT;
+								
+								(* system ports *)
+								clock: PORT IN;
+								reset: PORT IN
+								);
+	END StreamVideoOut;
+
+	DviOut* = CELL{Engine}
+						(
+						pixClk: PORT IN;
+						pixClk5x: PORT IN;
+						pixReset: PORT IN;
+
+						hSync: PORT IN;
+						vSync: PORT IN;
+						activeVideo: PORT IN;
+						red: PORT IN;
+						green: PORT IN;
+						blue: PORT IN;
+						
+						(* system ports *)
+						clock: PORT IN;
+						reset: PORT IN
+						)
+	END DviOut;
+
+	LdiOut* = CELL{Engine}
+						(
+						pixClk: PORT IN;
+						pixClkMx: PORT IN;
+						pixReset: PORT IN;
+
+						hSync: PORT IN;
+						vSync: PORT IN;
+						activeVideo: PORT IN;
+						red: PORT IN;
+						green: PORT IN;
+						blue: PORT IN
+						)
+	END LdiOut;
+
+	Fft2048* = CELL{Engine}
+						(
+						cfgInp: PORT IN;
+						reInp, imInp: PORT IN;
+						reOut, imOut: PORT OUT;
+						status: PORT OUT;
+						
+						(* system ports *)
+						clock: PORT IN;
+						reset: PORT IN
+						)
+	END Fft2048;
+
+	StreamBitWidthResizer* = CELL{Engine,
+										InpDataWidth=32,
+										OutDataWidth=64,
+										LittleEndian=1
+										}
+										(
+										input: PORT IN;
+										output: PORT OUT;
+										
+										(* system ports *)
+										clock: PORT IN;
+										reset: PORT IN
+										)
+	END StreamBitWidthResizer;
+
+END Engines.
+
+Compiler.Compile  -b=AMD --cellsAreObjects --newObjectFile --objectFile=Generic --objectFileExtension=.GofW --symbolFileExtension=.SymW
+
+AC3HWL/Engines.Mdf
+~

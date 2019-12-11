@@ -1,0 +1,9 @@
+Compiler.Compile  -p=TRMI 
+	Application/Candle.Mod 
+	~
+Compiler.Compile  --cellsAreObjects	
+	Application/Candle.Mod 
+	~
+System.DoFile LoadHWL.txt 
+	~ 
+AcHdlBackend.Build --deploy --target="OPALBoard" --outputPath="Ac3Projects"  "Candle.Network"  ~

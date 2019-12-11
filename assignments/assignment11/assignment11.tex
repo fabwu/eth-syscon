@@ -1,0 +1,339 @@
+\documentclass[10pt, a4]{article}
+\usepackage{a4wide}
+\usepackage[latin1]{inputenc}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{amssymb,amsmath}
+\usepackage{listings}
+\usepackage{helvet}
+\usepackage{fancyvrb}
+\renewcommand*\familydefault{\sfdefault}
+
+\usepackage{color}
+\usepackage[hidelinks,colorlinks=true,linkcolor=blue,urlcolor=blue]{hyperref}
+% listings: http://mirror.switch.ch/ftp/mirror/tex/help/Catalogue/entries/listings.html
+\usepackage{listings}
+\usepackage{xspace}
+% longtable: http://mirror.switch.ch/ftp/mirror/tex/help/Catalogue/entries/longtable.html
+\usepackage{longtable}
+\usepackage{array}
+
+\usepackage[contents={},opacity=1,scale=1.5,color=black!60,all]{background}
+\usepackage{graphicx}
+\usepackage{lastpage}
+%\usepackage[colorlinks=false, pdfborder={0 0 0}]{hyperref}
+\parskip 5pt
+\parindent 0cm
+
+\usetikzlibrary{calc}
+
+\definecolor{lightgrey}{rgb}{0.5,0.5,0.5}
+\definecolor{darkgrey}{rgb}{0.4,0.4,0.4}
+
+\newcommand{\changefont}[3]{\fontfamily{#1}\fontseries{#2}\fontshape{#3}\selectfont}
+
+\newcommand{\progfont}{\changefont{pcr}{m}{n}}
+\newcommand{\kwfont}{\changefont{pcr}{b}{n}}
+
+\lstdefinelanguage{raw}{}
+\lstdefinelanguage{Oberon}[]{Oberon-2}%
+  {morekeywords={OBJECT,SELF,%
+   HUGEINT,% Basic Types
+   AWAIT},% Built in functions
+   %sensitive=f,%
+   %alsoother={},% list here in lower case if keyword some where else wrongly highlighted
+    morecomment=[s][\color{red}]{(*!}{!*)}
+  }[keywords]%
+%\lstset{language=Oberon,
+%basicstyle=\small\progfont,keywordstyle=\kwfont ,identifierstyle=\progfont,
+%commentstyle=\color{darkgrey}, stringstyle=, showstringspaces=false, %keepspaces=true,
+%numbers=none, numberstyle=\tiny, stepnumber=1, numbersep=5pt, captionpos=b,
+%columns=flexible, % flexible, fixed, fullflexible
+%framerule=0.1mm,frame=shadowbox, rulesepcolor=\color{blue}, % frame = shadowbox
+%xleftmargin=2mm,xrightmargin=2mm,
+%breaklines=true,                % break long lines
+%breakatwhitespace=true,         % break lines only at white space
+%}
+%\renewcommand{\lstlistingname}{Fig.}
+
+\newcommand{\mylogo}{
+    \begin{tikzpicture}[overlay]
+    \node [below right, inner sep=5mm] (logol) at (current page.north west)   {\includegraphics[width=5cm]{../img/ETHlogo.pdf}};
+%    \node [below left, inner sep=5mm] (logo2) at (current page.north east)   {\includegraphics[width=6.5cm]{../img/NCTU.png}};
+    %\node [below left, inner sep=5mm] (logor) at (current page.north east)   {\parbox{6cm}{Department of Computer Science \\ Lecturer Felix Friedrich}};
+    %\draw [color=black, thin] (logol.east) -- (logor.west);
+    \end{tikzpicture}
+    }
+\SetBgContents{\mylogo}
+\SetBgPosition{current page.north west}% Select location
+\SetBgOpacity{1.0}% Select opacity
+\SetBgAngle{0.0}% Select roation of logo
+\SetBgScale{1.0}% Select scale factor of logo
+\SetBgOpacity{1.0}% Select opacity
+
+\usetikzlibrary{shapes,shadows}
+  \newcommand{\whitebox}[2]{
+    \begin{center}
+      \begin{tikzpicture}
+        \node [abstractbox, fill=white] (box) {\begin{minipage}{0.95\linewidth} #2 \end{minipage}};
+        \node[abstracttitle, right=10pt] at (box.north west) {\footnotesize #1};
+      \end{tikzpicture}
+    \end{center}
+  }
+\tikzstyle{abstractbox} = [draw=black, fill=white, rectangle,
+inner sep=10pt, style=rounded corners, drop shadow={fill=black,
+opacity=1}]
+\tikzstyle{abstracttitle} =[fill=white]
+\newcommand{\srcfont}{\usefont{T1}{lmtt}{b}{n}}
+% narrow font for code
+\newcommand{\srcfontn}{\usefont{T1}{lmvtt}{b}{n}}
+% font for verbatim envirnoment. Note: must be fixed width!
+\fvset{fontfamily=lmtt, fontseries=b,%,formatcom=\color{fcb}
+}
+\lstset{
+language=Oberon,% was Oberon-2, but does not support small letter keywords
+tabsize = 2,
+basicstyle=\srcfont,
+keywordstyle=\srcfont,
+%identifierstyle=\kw,
+commentstyle=\color{darkgrey},
+stringstyle=, showstringspaces=false,
+%keepspaces=true,
+numbers=none, numberstyle=\tiny, stepnumber=1, numbersep=5pt, captionpos=b,
+columns=flexible, % flexible, fixed, fullflexible
+%framerule=1mm,%frame=shadowbox, rulesepcolor=\color{blue}, % frame = shadowbox
+%xleftmargin=2mm,xrightmargin=2mm,
+%backgroundcolor = \color{code}
+%basicstyle=\small\progfont,keywordstyle=\kwfont ,identifierstyle=\progfont,
+%commentstyle=\color{darkgrey}, stringstyle=, showstringspaces=false, %keepspaces=true,
+%numbers=none, numberstyle=\tiny, stepnumber=1, numbersep=5pt, captionpos=b,
+%columns=flexible, % flexible, fixed, fullflexible
+%%framerule=0.1mm,frame=shadowbox, rulesepcolor=\color{blue}, % frame = shadowbox
+%xleftmargin=2mm,xrightmargin=2mm,
+%
+breaklines=true,                % break long lines
+breakatwhitespace=true         % break lines only at white space
+%backgroundcolor = \color{example}
+}
+
+\lstdefinelanguage{raw}{}
+
+\definecolor{example}{rgb}{0.9,1,0.9}
+\lstdefinestyle{example}{
+backgroundcolor = \color{example}
+}
+
+
+\begin{document}
+\DefineShortVerb{\@}
+\newcommand{\assnr}{11}
+\newcommand{\assdate}{2019}
+
+\newcommand{\AZ}{\ensuremath{\mathcal{A}_{2}}\xspace}
+
+\pagestyle{myheadings}\markright{System Construction Course \assdate, \assnr}
+\thispagestyle{empty}
+\phantom{xx}\vspace{-2.7cm}
+%\rule{\textwidth}{0.3mm}
+\begin{center}
+\begin{minipage}{0.95\textwidth}
+\begin{center}
+System Construction Course 2019,
+\\[1em] \textbf{Assignment \assnr} \\[1em]
+Felix Friedrich, ETH Z\"{u}rich, \assdate
+\end{center}
+\end{minipage}
+\rule{\textwidth}{0.3mm}
+\end{center}
+
+\newcommand{\apath}{https://svn.inf.ethz.ch/svn/lecturers/vorlesungen/trunk/syscon/2019/shared/assignments/assignment11}
+
+\section*{Multicore Computing on FPGAs -- The Active Cells Model.}
+\whitebox{Lessons to Learn}{
+\begin{itemize}
+\item Understand the features and limits of a message passing architecture.
+\item Understand how software code can be mapped to and deployed on a multicore architecture on FPGA.
+\item Understand how configurable hardware can be adapted to satisfy software requirements.
+\end{itemize}
+}
+\subsection*{Preparation}
+\begin{enumerate}
+\item Update your repository or checkout the exercise from \href{https://svn.inf.ethz.ch/svn/lecturers/vorlesungen/trunk/syscon/2019/shared/assignments/assignment11}{assignments/assignment11}
+\item Open a console in @assignment11@
+\item Extract the development system:
+\begin{lstlisting}[style=example]
+unzip bin.zip source.zip
+\end{lstlisting} 
+\item Compile the HDL tools and all hardware components with
+\begin{lstlisting}[style=example]
+./oberon execute BuildTools
+\end{lstlisting}
+\item Connect the board with LED inserted via USB cable to your PC. 
+\begin{center}
+\includegraphics[width=0.7\linewidth]{../img/LEDConnection.JPG}\\
+\footnotesize  LED connection (ignore the white and green serial cables).
+\end{center}
+
+ and try out the very first application example module \href{\apath/Application/PwmTest.Mod}{Application/PwmTest.Mod}, a module testing the Pulse Width Modulator hardware using
+\begin{lstlisting}[style=example]
+./oberon execute BuildPWM
+\end{lstlisting}
+After synthesis, place and routing and deployment, the three-color LED should slowly go from red over green to blue.
+\begin{center}
+\includegraphics[width=0.7\linewidth]{../img/PWMTest.png}\\
+\footnotesize  PWM Tester Network.
+\end{center}
+\item Connect the I2S board as shown on the picture below.
+\begin{center}
+\includegraphics[width=0.7\linewidth]{../img/I2SConnection.JPG}\\
+\footnotesize  I2S microphone connection.
+\end{center}
+
+\end{enumerate}
+
+
+\section{Candle}
+\begin{minipage}{0.7\textwidth}
+As an introductory exercise, we use the microphone (connected via I2S to the FPGA board) in order to detect when someone blows on the board and magically let the LEDs turn off and turn them on again after a while. 
+
+Module \href{\apath/Application/Candle.Mod}{Application/Candle.Mod} contains a network that connects the output of the I2S module to a software component which has access to a Pulse Width Modulator (PWM) driving an RGB LED.
+
+Complement the implementation of the @CandleCell@ in Candle.Mod such that it simulates a relighting candle.
+\end{minipage} \hfill
+\begin{minipage}{0.25\textwidth}
+\includegraphics[width=\linewidth]{../img/candle.jpg}
+\end{minipage}
+
+Run the build script for the candle using the command
+\begin{lstlisting}[style=example]
+./oberon execute BuildCandle
+\end{lstlisting}
+
+
+
+\begin{center}
+\includegraphics[width=0.7\linewidth]{../img/CandleNetwork.png}\\
+\footnotesize Relighting Candle Network.
+\end{center}
+
+
+\section{Sampling Audio}
+In the previous example, you implemented the logic of a cell in a network of cells. In this example, the business logic of the cell is already given in module \href{\apath/Application/SoundSampler.Mod}{Application/SoundSampler.Mod} and you need to construct a useful network of cells. 
+
+Connect the Serial-To-USB cable with the board as shown on the figure below.
+\begin{center}
+\includegraphics[width=0.7\linewidth]{../img/SerialConnection.JPG}\\
+\footnotesize  I2S serial connection.
+\end{center}
+
+Implement the network (as displayed below) in the @Network@ cellnet in module @SoundSampler.Mod@. 
+
+Run the build script for the audio sampler
+\begin{lstlisting}[style=example]
+./oberon execute BuildSampler
+\end{lstlisting}
+
+
+\begin{center}
+\includegraphics[width=0.7\linewidth]{../img/SamplerNetwork.png}\\
+\footnotesize Audio Sampler Network.
+\end{center}
+
+The sampler sends each sample taken using a serial connection to the host PC , waiting for each character to be sent. 
+In order to synchronize the communication (very crudely), 8192 4-byte data points will only be sent from the device to the host PC when a '0' character has been sent via serial connection from the host to the device. 
+Sending is indicated by a light up blue LED on the board.
+
+You can receive data on the host PC by calling 
+\begin{lstlisting}[style=example]
+V24.Map 9 /dev/ttyUSB0  ~ 
+SoundStream.Record 9 audio.txt ~ 
+\end{lstlisting}
+within the Oberon shell, or equivalently call
+\begin{lstlisting}[style=example]
+./oberon run RecordSoundStream
+\end{lstlisting}
+
+
+The command @Record@ in Oberon module \href{\apath/Application/SoundStream.Mod}{Application/SoundStream.Mod} also does an FFT of the data and tries to identify the dominant audio frequencies. The data can be visualized using the python script \href{\apath/plot_audio.py}{plot\_audio.py} using the command
+\begin{lstlisting}[style=example]
+python3 plot_audio.py
+\end{lstlisting}
+
+\begin{center}
+\includegraphics[width=0.5\textwidth]{../img/SignalFFT.png}
+\end{center}
+
+Originally, it was planned to use the FFT on the hardware device in this exercise but for reasons of time and simplicity, this idea has been dismissed. You are very much welcome to implement this on the FPGA hardware, nevertheless.
+
+While doing the experiments for this exercise, we have found out that already counting the numbers of crossings from below the mean to above the mean in an audio signal can be used in order to estimate the base frequency observed by the device, which gave us the idea for the following part of this exercise. 
+
+\section{Tuner}
+
+\begin{minipage}{0.9\textwidth}
+The objective of this part of the exercise is to build a system that computes the base frequency of a tone (e.g.\ of a musical instrument) in realtime and outputs the currently measured frequency (via serial connection) and indidates the difference to a target frequency on the RGB LED (red: too low, blue: too high, green: ok). 
+
+In order to be able to finish this in reasonable time, we provide you with our current solution where one component is missing: the bias correction. 
+
+You can alternatively use the serial connection in order to output sampling values on your host PC or the LED. Leave the green and white cables of the serial cable connected and connect the black cable (ground) alternatingly with the LED. We have only one ground pin.
+
+\end{minipage}
+\begin{minipage}{0.09\textwidth}
+\begin{center}
+\includegraphics[width=0.7\linewidth]{../img/Stimmgabel.jpg}
+\end{center}
+\end{minipage}
+
+
+Add the BIAS correction in three steps:
+\begin{enumerate}
+\item Compute the (integer) average value of a reasonable number of samples in software within the PitchDetector and subtract this value from each new sampled value. The (hardware) component @Sampler@ provides (at most) 20000 samples per second: an attempt to read a value from the @Sampler@ component output blocks until $50 \mu s$ have passed since the most recent read. The sampler delivers $24$ bit signed integer values (with a prevision of 18 bits, cf.\ I2S component data sheet).
+\begin{center}
+\includegraphics[width=0.7\linewidth]{../img/TunerNetwork1.png}
+\end{center}
+\item Build a software BiasCorrector component that takes data from the Sampler component, applies the bias correction, and passes the corrected values on to the Pitch detector (as seen below in the network of the tuner).
+\begin{center}
+\includegraphics[width=0.7\linewidth]{../img/TunerNetwork2.png}
+\end{center}
+\item Translate the software BiasCorrector to Verilog Hardware Description Language and provide a new specialized ActiveCells BiasCorrector engine that does this in hardware.
+\begin{center}
+\includegraphics[width=0.7\linewidth]{../img/TunerNetwork3.png}
+\end{center}
+\end{enumerate}
+
+Steps 1 and 2 can be carried out directly in module \href{\apath/Application/Tuner.Mod}{Application/Tuner.Mod} and do not require any changes in the Active Cells Hardware library. Recompile, build and deploy the module using  the command 
+\begin{lstlisting}[style=example]
+./oberon execute BuildTuner
+\end{lstlisting}
+
+The third step is more involved and usually consists of the following tasks
+\begin{enumerate}
+\item[(a)] Create an Active Cells registration module of the hardware module.  This has already been done and can be found in module \href{\apath/HardwareLibrary/IO/BiasCorrector.Mod}{HardwareLibrary/IO/BiasCorrector.Mod}. Please have a look in this module that contains the description of the software (Axi4Stream) ports and the hardware ports involved.
+\item[(b)] Create the corresponding Verilog module. We have prepared a template of this module (such that it adheres to the right kind of interface) with \href{\apath/HardwareLibrary/IO/BiasCorrector.v}{HardwareLibrary/IO/BiasCorrector.v}. The business logic of this module is largely missing.
+\item[(c)] Define the hardware ports that are used by (instances) of this module for the underlying hardware / board. This definition (here in \href{\apath/HardwareLibrary/OPALBoard.Mod}{HardwareLibrary/OPALBoard.Mod})  is not necessary here because the module does not provide any hardware ports. 
+\item[(d)] Register the Verilog module in the Active Cells Hardware library. We have carried this out already in file \href{\apath/HardwareLibrary/Specifications.txt}{HardwareLibrary/Specifications.txt}
+\end{enumerate}
+
+The implementation of the Verilog module is non-trivial because of the Axi4Stream ports involved. It is best to have a look at other hardware modules in the Hardware library. In order to make it doable in the amount of time given, our code can already pass on unaltered data. The code can be understood with the following rules in mind.
+
+Sender perspective:
+\begin{enumerate}
+\item[(i)] Availability of data is signaled on the output port (signal @out_tvalid@) only when data are available. 
+\item[(ii)] Data keeps being available on the output as long as they have not been picked up (signal @out_tready@). 
+\end{enumerate}
+
+Receiver perspective:
+\begin{enumerate}
+\item[(iii)] Data is only read from the input when it is available (signal @in_tvalid@).  
+\item[(iv)] Sender of the data sees that you have picked up the data (signal @out_tready@).
+%\item[(v)] Be aware that in hardware you observe every clock-cycle. While you cannot assume that software observes every single change of a signal, you can assume that your hardware module sees every change of the data. As a consequence you can keep the signal @out_tready@ high always because you cannot miss any @out_tvalid == 1@ to happen. This is different in a software module.
+\end{enumerate}
+
+\subsection*{Documents}
+\begin{itemize}
+\item Slides from the lecture \href{http://lec.inf.ethz.ch/syscon}{homepage}.
+\item I2S microphone SPH0645LM4H datasheet \href{https://svn.inf.ethz.ch/svn/lecturers/vorlesungen/trunk/syscon/2019/shared/documents/microphone/SPH0645LM4H-B.pdf}{documents/microphone/SPH0645LM4H-B.pdf}
+\item AMBA 4 AXI4-Stream Protocol in \href{https://svn.inf.ethz.ch/svn/lecturers/vorlesungen/trunk/syscon/2018/shared/documents/ActiveCells/IHI0051A_amba4_axi4_stream_v1_0_protocol_spec.pdf}{documents/ActiveCells/IHI0051A\_amba4\_axi4\_stream\_v1\_0\_protocol\_spec.pdf}
+\item Active Cells Paper in \href{https://svn.inf.ethz.ch/svn/lecturers/vorlesungen/trunk/syscon/2018/shared/documents/ActiveCells/ComputeModelHPSoCFPGA.pdf}{documents/ActiveCells/ComputeModelHPSoCFPGA.pdf}
+\end{itemize}
+
+\end{document}

@@ -1,0 +1,12 @@
+	Compiler.Compile  -p=TRMI
+	Application/SoundSampler.Mod
+	~
+	Compiler.Compile  --cellsAreObjects	
+	Application/SoundSampler.Mod
+	~
+	Compiler.Compile
+	Application/Fourier.Mod
+	Application/SoundStream.Mod 
+	~
+	System.DoFile LoadHWL.txt ~
+	AcHdlBackend.Build --deploy --target="OPALBoard" --outputPath="Ac3Projects"  "SoundSampler.Network" ~

@@ -1,0 +1,9 @@
+Compiler.Compile  -p=TRMI
+		Application/Tuner.Mod
+	~
+Compiler.Compile  --cellsAreObjects	
+		Application/Tuner.Mod
+	~
+System.DoFile 	LoadHWL.txt ~ 
+AcHdlBackend.Build --deploy --target="OPALBoard" --outputPath="Ac3Projects"  "Tuner.Network" ~
+

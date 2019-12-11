@@ -1,0 +1,41 @@
+(* compiler components and hardware library *)
+Compiler.Compile
+	ActiveCells/HdlBackend/Unix.HostOsApps.Mod 
+	ActiveCellsRuntime.mod
+	ActiveCellsRunner.mod 
+	ActiveCells/HdlBackend/PathTools.Mod 
+
+	ActiveCells/HdlBackend/AcHdlBackend.Mod 
+	ActiveCells/HdlBackend/AcVerilogCodeGen.Mod 
+	ActiveCells/HdlBackend/AcLattice.Mod 
+	
+	HardwareLibrary/SystemClock.Mod
+	HardwareLibrary/SystemReset.Mod
+	HardwareLibrary/ExternalClock.Mod
+	HardwareLibrary/Fifo.Mod
+	HardwareLibrary/TRM.Mod
+	HardwareLibrary/OPALBoard.Mod
+	HardwareLibrary/StreamControl/StreamPortDemux.Mod
+	HardwareLibrary/StreamControl/StreamPortMux.Mod
+	HardwareLibrary/IO/Gpi.Mod
+	HardwareLibrary/IO/Gpo.Mod
+	HardwareLibrary/IO/UartRx.Mod
+	HardwareLibrary/IO/UartTx.Mod
+	HardwareLibrary/IO/I2S.Mod
+	HardwareLibrary/IO/Sampler.Mod
+	HardwareLibrary/IO/BiasCorrector.Mod
+	HardwareLibrary/IO/Pwm.Mod
+	
+	HardwareLibrary/Time/Timer.Mod
+	HardwareLibrary/IO/LEDDigits.Mod
+	~
+(* Code compilation for TRM *)
+Compiler.Compile  -p=TRMI
+	Application/TRM.TRMRuntime.Mod
+	Application/Engines.Mdf
+	Application/TRM.Channels.Mod
+	~
+(* Compilation of the code for hdl code generation  *)
+Compiler.Compile  --cellsAreObjects	
+	Application/Engines.Mdf
+	~

@@ -1,0 +1,4 @@
+System.DoFile init.txt ~
+V24.Map 9 /dev/ttyUSB0 ~
+SoundStream.Record 9 audio.txt  ~
+

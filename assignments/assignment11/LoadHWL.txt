@@ -1,0 +1,4 @@
+System.FreeDownTo Engines~
+System.FreeDownTo AcHdlBackend ~
+AcHdlBackend.AddPathToLibrary "HardwareLibrary" ~
+AcHdlBackend.LoadSpecs HardwareLibrary/Specifications.txt ~ 

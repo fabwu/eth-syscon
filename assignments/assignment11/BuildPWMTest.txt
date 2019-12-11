@@ -1,0 +1,9 @@
+Compiler.Compile  -p=TRMI 
+	Application/PWMTest.Mod 
+	~
+Compiler.Compile  --cellsAreObjects	
+	Application/PWMTest.Mod 
+	~
+System.DoFile LoadHWL.txt 
+	~ 
+AcHdlBackend.Build --deploy --target="OPALBoard" --outputPath="Ac3Projects"  "PWMTest.Network"  ~

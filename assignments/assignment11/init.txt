@@ -1,0 +1,8 @@
+Heaps.SetMetaData ~
+Files.AddSearchPath . ~
+Files.AddSearchPath bin ~
+Files.AddSearchPath work ~
+Files.AddSearchPath source ~
+Files.SetWorkPath . ~
+FSTools.Mount WORK RelativeFileSystem . ~
+

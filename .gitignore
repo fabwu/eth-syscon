@@ -11,3 +11,7 @@ Build/
 *.asc
 *.bin
 *.blif
+*.dfu
+*.rsc
+*.Mod.v
+*~

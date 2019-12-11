@@ -285,3 +285,4 @@ endmodule
 // $ yosys -DTEST -p 'synth_ice40 -blif risc0.blif' RISC0.v
 // $ arachne-pnr -d 8k -P tq144:4k -o risc0.asc -p RISC0.pcf risc0.blif
 // $ icetime -d hx8k -P tq144:4k -p RISC0.pcf -t risc0.asc
+// timing ist 33.27 ns (30.05 MHz) Why is that ok?

@@ -1,0 +1,9 @@
+MODULE* Blinky;
+  IMPORT SYSTEM;
+
+VAR z: INTEGER;
+
+BEGIN z := 0;
+  REPEAT LED(ROR(z,20)); INC(z)
+  UNTIL FALSE
+END Blinky.

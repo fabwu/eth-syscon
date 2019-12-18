@@ -312,6 +312,17 @@ TYPE
 				Error("",Streams.Invalid,HdlBackend.ErrUnexpected,"icepack failed");
 				RETURN FALSE;
 			END; 
+			PadDfuFile(architecture.acName^ & ".bin", architecture.acName^ & ".dfu");
+
+			NEW(application,"dfu-suffix"); 				
+			application.AddParameter("-a");
+			application.AddParameter(architecture.acName^ & ".dfu");
+							
+			IF ~RunApplication(application) THEN 
+				Error("",Streams.Invalid,HdlBackend.ErrUnexpected,"dfu-suffix failed");
+				RETURN FALSE;
+			END; 
+
 			RETURN TRUE;
 		FINALLY
 			ErrorUnexpected; RETURN FALSE;
@@ -328,16 +339,6 @@ TYPE
 		BEGIN
 			IF res # 0 THEN RETURN FALSE END;				
 			ShowPhase("Deploy (dfu)");
-			PadDfuFile(architecture.acName^ & ".bin", architecture.acName^ & ".dfu");
-
-			NEW(application,"dfu-suffix"); 				
-			application.AddParameter("-a");
-			application.AddParameter(architecture.acName^ & ".dfu");
-							
-			IF ~RunApplication(application) THEN 
-				Error("",Streams.Invalid,HdlBackend.ErrUnexpected,"dfu-suffix failed");
-				RETURN FALSE;
-			END; 
 
 			NEW(application,"dfu-util"); 				
 			application.AddParameter("-D");

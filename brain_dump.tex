@@ -1,0 +1,117 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc}
+%\usepackage{serohyph}
+\usepackage[ngerman]{babel}
+\usepackage{latexsym}
+\usepackage[pdfpagelabels,plainpages=false]{hyperref} %Für Übersichts-Lesezeichen im PDF
+			% Fuer Print besser false
+\usepackage{setspace} % Zeilenabstand ändern mi
+%\usepackage{sectsty} % section style package
+\usepackage[%small
+%,compact
+]{titlesec}  % Paket um Überschriften einfach zu manipulieren
+\usepackage{enumitem} % Paket für Auflistungen zu manipulieren (\setlist{noitemsep})
+\usepackage{color} % für Farben
+
+%\titleformat{ command }[ shape ]{ format }{ label }{ sep }{ before-code }[ after-code ]
+\titleformat{\section} % titlesec
+  {\normalfont\bfseries} %
+  {\bfseries \thesection}
+  {.5em}
+  {}
+\titlespacing{\section} % Um angehenden Textblock nach \section layouten.
+             {0pc}{2ex}{3ex}[0pc] % Hiermit wird der Abstand zwischen Titel und Text verkelinert (=0)
+%{0pc}{2ex}{0ex}[0pc] Abstand zum linken Rand |Abstand zum oberen Text | Abstand zum unteren Text | Abstand zum rechten Rand
+%ACHTUNG letztes Klammerpaar eckige Klammern!!
+%
+\hypersetup{		% von package hyperref
+colorlinks=true,        % Links farbig ('true') oder nicht ('false'). Fuer
+                        % Print besser 'false'
+linkcolor=red,          % Farbe fuer die internen Links
+urlcolor=blue,          % Farbe fuer externe Links (http://...)
+pdfborder={0 0 0},      % wenn colorlinks nicht gesetzt ist gibt es einen
+                        % Rand dieser Farbe (R, G, B} um den Link
+                        % geoeffnet werden
+pdfpagemode=UseOutlines,% andere Moeglichkeiten: 'None', 'UseThumbs'
+                        % und 'FullScreen'
+pdftitle={Titel des Dokuments}, pdfauthor={Autor(en)},
+pdfsubject={Thema}, pdfkeywords={Keywords} }
+
+\addtolength{\textwidth}{2cm} %Textblcok-Breite
+\addtolength{\oddsidemargin}{-1cm} %Abst. 1 inch von linkem Rand
+\addtolength{\headsep}{-2cm} %Abst zu Kopfzeile
+\addtolength{\textheight}{3cm} % Textblock-Länge
+%
+\def\headtitle{System Construction} % ToDo: Wiedergebbare Titel für den gesammten Text \headtitle
+%
+\title{\headtitle}
+\author{VIS}
+\makeindex
+
+\begin{document}
+\pagestyle{empty}
+\parindent 0pt	% kein Erstzeileneinzug für das ganze Dokument
+\flushleft % linksbündig
+\setlist{noitemsep} %Kein Zeilenabstand zwischen Listen
+%
+%\maketitle
+%
+%\color{blue}
+\color[rgb]{0,0,.5}
+{\LARGE \headtitle\par}
+\hrulefill\\
+%
+\section*{Oral Exam Report}
+\vspace{.5cm}
+%\begin{onehalfspace} %geht nur bei tabular, nicht bei "`tabbing"'
+  \begin{tabbing}
+    \quad \= Examiner:XXXX \= XXXXXXXXXXX \kill % Abstandgebende-Zeile
+    \>Course:		\>	\headtitle\\[1ex]
+    \>Examiner: 	\>	F. Friedrich\\[1ex]	%ToDo
+    \>Protocol: 	\>	P. Reed\\[1ex]	%ToDo
+    \>Semester:	\>	HS19\\[1ex]	%ToDo
+    \>Datum: 		\>	2020-02-03%ToDo
+  \end{tabbing}
+%\end{onehalfspace}%
+%
+%\vspace{0.1cm}
+\hrulefill\\
+\color{black}
+\vspace{.7cm}
+
+%ToDo
+\section{Explain how SPI work (draw waves)}
+CLK, CS/SS, MOSI, MISO \\
+Pull CS low, start toggling clock, set/reset MOSI/MISO, sample on clock edge, pull CS high
+
+\section{How to wire master and slaves together?}
+CLK/MOSI/MISO same for all slaves and separate CS for each slave \\
+can also use daisy-chain
+
+\section{How does CS/SS work?}
+If SS is not pulled low then data wires are in tri-state (don't know if that's correct)
+
+\section{Assume you have RPI with Minos how to protect against infinite loops?}
+
+Watchdog, reset timer in background task
+
+\section{What do we test if we reset timer in periodic task?}
+
+We test if interrupts (scheduling) still work
+
+\section{Explain the programming model of A2}
+
+Active Objects, AWAIT, EXCLUSIVE, ACTIVE
+
+\section{What are the states of a active object in A2?}
+
+Ready, Running, Terminated, Condition, Lock (draw state diagram)
+
+\section{How to implement conditions or locks?}
+
+Queues in object header which are protected by fine grained locks implemented in hardware 
+\bigbreak
+Then they run out of questions and asked me for what the CMPXCHG instruction in x86 can be used. I thought they mean CAS and explained how to implement a spin-lock with it but CMPXCHG is actually used to implement CAS.
+
+\end{document}
